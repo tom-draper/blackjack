@@ -52,7 +52,15 @@ class Hand():
         # Print each card in hand
         for card in self.cards:
             string += '{} '.format(card)
-        string += ' (Total {})'.format(*self.hand_value)
+        
+        # Create sequence of hand values separates by spaces
+        hand_value = ''
+        for i, value in enumerate(self.hand_value):
+            hand_value += '{}'.format(value)
+            if i < len(self.hand_value) - 1:
+                hand_value += ' or '
+            
+        string += '  (Total = {})'.format(hand_value)
             
         return string
 
