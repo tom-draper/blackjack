@@ -29,10 +29,15 @@ class Hand():
             **dict.fromkeys(['QC', 'QD', 'QH', 'QS'], 10),
         }
 
-        return card_value[card]
+        return card_values[card]
     
     def __str__(self):
-        return str(self.cards)
+        string = ''
+        # Print each card in hand
+        for card in self.cards:
+            string += str(card) + ' '
+            
+        return string
 
 
 class Player():
@@ -45,8 +50,10 @@ class Player():
         self.hand.update_hand_value()
     
     def draw(self, available_cards):
-        print("draw")
         self.hand.cards.append(random.choice(available_cards))
+    
+    def __str__(self):
+        return 'Hand: {}'.format(self.hand)
 
 
 class Game():
@@ -74,16 +81,13 @@ class Game():
         pass
     
     def __str__(self):
-        string = '{} players\n'.format(self.no_players)
-        # Display each players hand
+        # Print dealer
+        string = 'Dealer -- {}\n'.format(self.players['dealer'])
+        # Print each player
         for i in range(self.no_players):
-            string += 'Player {} hand: '.format(i+1)
-            # Print each card in players hand
-            for idx, card in enumerate(self.players['player{}'.format(i)].hand.cards):
-                string += '{} '.format(card)
-            if i < self.no_players - 1:
-                string += '\n'
-                
+            string += 'Player{} -- {}\n'.format(i+1, self.players['player{}'.format(i)])
+        string += 'Cards remaining: {}'.format(self.cards)
+        
         return string
 
 game = Game(3)
