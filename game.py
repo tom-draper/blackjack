@@ -1,4 +1,5 @@
 import random
+from itertools import count
 
 
 class Hand():
@@ -73,7 +74,8 @@ class Hand():
     
     def __str__(self):
         string = ''
-        # Print each card in hand
+        
+        # Add each card in hand to string
         for card in self.cards:
             string += '{} '.format(card)
         
@@ -83,14 +85,17 @@ class Hand():
             hand_value += '{}'.format(value)
             if i < len(self.hand_value) - 1:
                 hand_value += ' or '
-            
-        string += '  (Total = {})'.format(hand_value)
+        # Add the current hand total to string
+        string += '  ({})'.format(hand_value)
             
         return string
 
 
 class Player():
+    _ids = count(-1)
+    
     def __init__(self, available_cards):
+        self.id = next(self._ids)
         self.hand = Hand(available_cards)
     
     def draw(self, available_cards):
@@ -123,19 +128,99 @@ class Game():
                 'JC', 'JD', 'JH', 'JS', 'KC', 'KD', 'KH', 'KS', 
                 'QC', 'QD', 'QH', 'QS']
     
+    def bust(self, player):
+        # Check if there is a possible hand value under 21
+        for hand_value in player.hand.hand_value:
+            if hand_value <= 21:
+                return False
+                
+        return True
+
+    def dealerContinue(self):
+        """Checks if any possible hand values is still under 17"""
+        for hand_value in self.players['dealer'].hand.hand_value:
+            if hand_value == 21:  # If hand value reached 21, stop drawing
+                return False
+        
+        # Check if any possible hand values are under 17
+        for hand_value in self.players['dealer'].hand.hand_value:
+            if hand_value < 17:
+                return True
+        
+        return False
+        
+
+    def tidyHandValue(self, dealer=False, player_id=1):
+        """Remove any hand values over 21."""
+        if dealer:
+            player = self.players['dealer']
+        else:
+            player = self.players['player{}'.format(player_id)]
+        
+        new_hand_value = []
+        for hand_value in player.hand.hand_value:
+            if hand_value == 21:
+                new_hand_value = [21]  # Overwrite hand value, only keep 21
+                break
+            elif hand_value <= 21:
+                new_hand_value.append(hand_value)
+                
+        # Update player's hand value
+        player.hand.hand_value = tuple(new_hand_value)
+    
+    def playerDraws(self, dealer=False, player_id=1, times=1):
+        if dealer:
+            player = self.players['dealer']
+            print('Dealer draws', end='')
+        else:
+            player = self.players['player{}'.format(player_id)]
+            print('Player {} draws'.format(player_id+1), end='')
+        
+        # If drawing multiple times display multiple
+        if times > 1:
+            print(' X{}'.format(times))
+        else:
+            print('\n')
+            
+        for _ in range(times):
+            player.draw(self.cards)
+        print(player, '\n')  # Display plaeyr hand status
+    
     def playGame(self):
-        print('Game begin')
+        print('Game begin\n')
         
         # Dealer init
-        print('Dealer draws')
-        self.players['dealer'].draw(self.cards)
-        print(self.players['dealer'])
+        self.playerDraws(dealer=True)
         
-        # Players init
         for i in range(self.no_players):
-            print('Player {} draws'.format(i+1))
-            self.players['player{}'.format(i)].draw(self.cards)
-
+            # Players init
+            self.playerDraws(player_id=i, times=2)
+            
+            # Players play
+            active = True
+            while active:
+                choice = input("Hit or stand: ")
+                
+                if choice.lower() == "hit" or choice.lower() == "h":  # Draw
+                    print('Player {} draws'.format(i+1))
+                    self.players['player{}'.format(i)].draw(self.cards)
+                    print(self.players['player{}'.format(i)], '\n')
+                    
+                    if self.bust(self.players['player{}'.format(i)]):
+                        print("Bust!")
+                        active = False
+                    else:
+                        self.tidyHandValue(i)
+                elif choice.lower() == "stand" or choice.lower() == "s":
+                    active = False
+                else:
+                    print("Please enter an option.")
+        
+        # Dealer draws
+        while dealerContinue():
+            print('Dealer draws')
+            self.players['dealer'].draw(self.cards)
+            print(self.players['dealer'], '\n')
     
     def __str__(self):
         # Print dealer
