@@ -6,25 +6,49 @@ class Hand():
         self.cards = []
         self.hand_value = (0,)  # Tuple containing possible values of this hand
     
-    def update_hand_value(self):
-        total = 0
+    def add_to_hand_value(self, card):
+        """Add the value of the input card to the current hand value."""
+        card_value = self.card_value(card)
+        
+        new_hand_value = []
+        if type(card_value) is tuple:  # If more than one card value (drawn Ace)
+            # Add each card value to each current hand value
+            # E.g. hand value can be 6 or 16 due to holding an Ace
+            #      new card value could be 1 or 10 (an Ace)
+            #      new hand value would be 7, 16, 17 or 26
+            for hand_value in self.hand_value:
+                for value in card_value:
+                    new_hand_value.append(hand_value + value)
+        else:
+            for hand_value in self.hand_value:
+                new_hand_value.append(hand_value + card_value)
+        
+        self.hand_value = tuple(new_hand_value)  # Save result as tuple
+    
+    def calc_hand_value(self):
+        """Calculate the value of the entire hand from scratch."""
+        self.hand_value = (0,)
         for card in self.cards:
-            card_value = self.card_value(card)
+            self.add_to_hand_value(card)
+    
+    # def calc_hand_value(self):
+    #     for card in self.cards:
+    #         card_value = self.card_value(card)
             
-            new_hand_value = []
-            if type(card_value) is tuple:  # If more than one card value (drawn Ace)
-                # Add each card value to each current hand value
-                # E.g. hand value can be 6 or 16 due to holding an Ace
-                #      new card value could be 1 or 10 (an Ace)
-                #      new hand value would be 7, 16, 17 or 26
-                for hand_value in self.hand_value:
-                    for value in card_value:
-                        new_hand_value.append(hand_value + value)
-            else:
-                for hand_value in self.hand_value:
-                    new_hand_value.append(hand_value + card_value)
+    #         new_hand_value = []
+    #         if type(card_value) is tuple:  # If more than one card value (drawn Ace)
+    #             # Add each card value to each current hand value
+    #             # E.g. hand value can be 6 or 16 due to holding an Ace
+    #             #      new card value could be 1 or 10 (an Ace)
+    #             #      new hand value would be 7, 16, 17 or 26
+    #             for hand_value in self.hand_value:
+    #                 for value in card_value:
+    #                     new_hand_value.append(hand_value + value)
+    #         else:
+    #             for hand_value in self.hand_value:
+    #                 new_hand_value.append(hand_value + card_value)
             
-            self.hand_value = tuple(new_hand_value)  # Save result as tuple
+    #         self.hand_value = tuple(new_hand_value)  # Save result as tuple
     
     def card_value(self, card):
         card_values = {
@@ -68,14 +92,11 @@ class Hand():
 class Player():
     def __init__(self, available_cards):
         self.hand = Hand(available_cards)
-        
-        self.draw(available_cards)
-        self.draw(available_cards)
-        
-        self.hand.update_hand_value()
     
     def draw(self, available_cards):
-        self.hand.cards.append(random.choice(available_cards))
+        card = random.choice(available_cards)
+        self.hand.cards.append(card)
+        self.hand.add_to_hand_value(card)
     
     def __str__(self):
         return 'Hand: {}'.format(self.hand)
@@ -103,17 +124,29 @@ class Game():
                 'QC', 'QD', 'QH', 'QS']
     
     def playGame(self):
-        pass
+        print('Game begin')
+        
+        # Dealer init
+        print('Dealer draws')
+        self.players['dealer'].draw(self.cards)
+        print(self.players['dealer'])
+        
+        # Players init
+        for i in range(self.no_players):
+            print('Player {} draws'.format(i+1))
+            self.players['player{}'.format(i)].draw(self.cards)
+
     
     def __str__(self):
         # Print dealer
-        string = 'Dealer - {}\n'.format(self.players['dealer'])
+        string = '> Dealer - {}\n'.format(self.players['dealer'])
         # Print each player
         for i in range(self.no_players):
-            string += 'Player{} - {}\n'.format(i+1, self.players['player{}'.format(i)])
-        string += 'Cards remaining: {}'.format(self.cards)
+            string += '> Player {} - {}\n'.format(i+1, self.players['player{}'.format(i)])
+        # Print list of cards remaining
+        string += '> Cards remaining: {}'.format(self.cards)
         
         return string
 
 game = Game()
-print(game)
+game.playGame()
