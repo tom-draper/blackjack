@@ -15,7 +15,6 @@ GREEN_BG = (53, 101, 77)  # Poker green
 def draw():
     win.fill(GREEN_BG)  # Background colour
     
-    
     pygame.display.update()  # Update the display
 
 def main():
