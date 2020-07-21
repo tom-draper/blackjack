@@ -191,6 +191,14 @@ class Game():
     def divider(self):
         print('-------------\n')
     
+    
+    def checkWinner(self):
+        for i in range(self.no_players):
+            if self.players['player{}'.format(i)].hand.hand_value > self.players['dealer'].hand.hand_value:
+                print('Player {} wins!'.format(i+1))
+            else:
+                print('Player {} loses'.format(i+1))
+    
     def playGame(self):
         print('Game begin\n')
         
@@ -232,6 +240,7 @@ class Game():
             if self.bust(dealer=True):
                 print('Dealer bust!')
         
+            self.checkWinner()
     
     def __str__(self):
         # Print dealer
