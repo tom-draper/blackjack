@@ -141,24 +141,27 @@ class Game():
         
 
     def tidyHandValue(self, dealer=False, player_id=0):
-        """Remove any hand values over 21."""
+        """Remove any excess hand values over 21."""
         if dealer:
             player = self.players['dealer']
         else:
             player = self.players['player{}'.format(player_id)]
         
-        new_hand_value = []
-        for hand_value in player.hand.hand_value:
-            if hand_value == 21:
-                new_hand_value = [21]  # Overwrite hand value, only keep 21
-                break
-            elif hand_value <= 21:
-                new_hand_value.append(hand_value)
-                
-        # Update player's hand value
-        player.hand.hand_value = tuple(new_hand_value)
+        # Remove any bust hand values if more than one hand value option exists
+        if len(player.hand.hand_value) > 1:
+            new_hand_value = []
+            for hand_value in player.hand.hand_value:
+                if hand_value == 21:
+                    new_hand_value = [21]  # Overwrite hand value, only keep 21
+                    break
+                elif hand_value <= 21:
+                    new_hand_value.append(hand_value)
+                    
+            # Update player's hand value
+            player.hand.hand_value = tuple(new_hand_value)
     
     def playerDraws(self, dealer=False, player_id=0, times=1):
+        """Player draws input number of times."""
         if dealer:
             print('Dealer draws', end='')
             player = self.players['dealer']
@@ -174,6 +177,8 @@ class Game():
             
         for _ in range(times):
             player.draw(self.cards)
+        
+        self.tidyHandValue(dealer, player_id)
         print(player, '\n')  # Display plaeyr hand status
     
     def allBust(self):
@@ -199,34 +204,34 @@ class Game():
             self.playerDraws(player_id=i, times=2)
             
             # Players play
-            playing = True
-            while playing:
-                choice = input('Hit or stand: ')
+            while True:
+                choice = input('> Hit or stand: ')
+                print()
                 
                 if choice.lower() == 'hit' or choice.lower() == 'h':  # Draw
                     self.playerDraws(player_id=i)
                     
                     if self.bust(player_id=i):
                         print('Player {} bust!\n'.format(i+1))
-                        active = False
-                    else:
-                        self.tidyHandValue(i)
+                        break
                 elif choice.lower() == "stand" or choice.lower() == "s":
-                    active = False
+                    break
                 else:
                     print("Please enter an option.")
         
         if not self.allBust():
             self.divider()
             
+            print("Dealer\n {}\n".format(self.players['dealer']))
+            
             # Dealer draws
             while self.dealerContinue():
                 time.sleep(1.5)
                 self.playerDraws(dealer=True)
-                self.tidyHandValue(dealer=True)
             
             if self.bust(dealer=True):
                 print('Dealer bust!')
+        
     
     def __str__(self):
         # Print dealer
