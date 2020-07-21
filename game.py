@@ -7,6 +7,7 @@ class Hand():
     def __init__(self, available_cards):
         self.cards = []
         self.hand_value = (0,)  # Tuple containing possible values of this hand
+        self.bust = False
     
     def add_to_hand_value(self, card):
         """Add the value of the input card to the current hand value."""
@@ -32,25 +33,6 @@ class Hand():
         self.hand_value = (0,)
         for card in self.cards:
             self.add_to_hand_value(card)
-    
-    # def calc_hand_value(self):
-    #     for card in self.cards:
-    #         card_value = self.card_value(card)
-            
-    #         new_hand_value = []
-    #         if type(card_value) is tuple:  # If more than one card value (drawn Ace)
-    #             # Add each card value to each current hand value
-    #             # E.g. hand value can be 6 or 16 due to holding an Ace
-    #             #      new card value could be 1 or 10 (an Ace)
-    #             #      new hand value would be 7, 16, 17 or 26
-    #             for hand_value in self.hand_value:
-    #                 for value in card_value:
-    #                     new_hand_value.append(hand_value + value)
-    #         else:
-    #             for hand_value in self.hand_value:
-    #                 new_hand_value.append(hand_value + card_value)
-            
-    #         self.hand_value = tuple(new_hand_value)  # Save result as tuple
     
     def card_value(self, card):
         card_values = {
@@ -134,13 +116,15 @@ class Game():
             player = self.players['dealer']
         else:
             player = self.players['player{}'.format(player_id)]
-            
+        
+        bust = True
         # Check if there is a possible hand value under 21
         for hand_value in player.hand.hand_value:
             if hand_value <= 21:
-                return False
-                
-        return True
+                bust = False
+        
+        player.hand.bust = bust
+        return bust
 
     def dealerContinue(self):
         """Checks if any possible hand values is still under 17"""
@@ -192,6 +176,16 @@ class Game():
             player.draw(self.cards)
         print(player, '\n')  # Display plaeyr hand status
     
+    def allBust(self):
+        # Look for player who hasn't bust
+        for i in range(self.no_players):
+            if self.players['player{}'.format(i)].hand.bust == False:
+                return False
+        return True
+    
+    def divider(self):
+        print('-------------\n')
+    
     def playGame(self):
         print('Game begin\n')
         
@@ -199,12 +193,14 @@ class Game():
         self.playerDraws(dealer=True)
         
         for i in range(self.no_players):
+            self.divider()
+            
             # Players init
             self.playerDraws(player_id=i, times=2)
             
             # Players play
-            active = True
-            while active:
+            playing = True
+            while playing:
                 choice = input('Hit or stand: ')
                 
                 if choice.lower() == 'hit' or choice.lower() == 'h':  # Draw
@@ -220,13 +216,17 @@ class Game():
                 else:
                     print("Please enter an option.")
         
-        # Dealer draws
-        while self.dealerContinue():
-            time.sleep(1.5)
-            self.playerDraws(dealer=True)
-        
-        if self.bust(dealer=True):
-            print('Dealer bust!')
+        if not self.allBust():
+            self.divider()
+            
+            # Dealer draws
+            while self.dealerContinue():
+                time.sleep(1.5)
+                self.playerDraws(dealer=True)
+                self.tidyHandValue(dealer=True)
+            
+            if self.bust(dealer=True):
+                print('Dealer bust!')
     
     def __str__(self):
         # Print dealer
