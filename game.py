@@ -1,4 +1,5 @@
 import random
+import time
 from itertools import count
 
 
@@ -128,7 +129,12 @@ class Game():
                 'JC', 'JD', 'JH', 'JS', 'KC', 'KD', 'KH', 'KS', 
                 'QC', 'QD', 'QH', 'QS']
     
-    def bust(self, player):
+    def bust(self, dealer=False, player_id=0):
+        if dealer:
+            player = self.players['dealer']
+        else:
+            player = self.players['player{}'.format(player_id)]
+            
         # Check if there is a possible hand value under 21
         for hand_value in player.hand.hand_value:
             if hand_value <= 21:
@@ -150,7 +156,7 @@ class Game():
         return False
         
 
-    def tidyHandValue(self, dealer=False, player_id=1):
+    def tidyHandValue(self, dealer=False, player_id=0):
         """Remove any hand values over 21."""
         if dealer:
             player = self.players['dealer']
@@ -168,19 +174,19 @@ class Game():
         # Update player's hand value
         player.hand.hand_value = tuple(new_hand_value)
     
-    def playerDraws(self, dealer=False, player_id=1, times=1):
+    def playerDraws(self, dealer=False, player_id=0, times=1):
         if dealer:
-            player = self.players['dealer']
             print('Dealer draws', end='')
+            player = self.players['dealer']
         else:
-            player = self.players['player{}'.format(player_id)]
             print('Player {} draws'.format(player_id+1), end='')
+            player = self.players['player{}'.format(player_id)]
         
         # If drawing multiple times display multiple
         if times > 1:
             print(' X{}'.format(times))
         else:
-            print('\n')
+            print()
             
         for _ in range(times):
             player.draw(self.cards)
@@ -199,15 +205,13 @@ class Game():
             # Players play
             active = True
             while active:
-                choice = input("Hit or stand: ")
+                choice = input('Hit or stand: ')
                 
-                if choice.lower() == "hit" or choice.lower() == "h":  # Draw
-                    print('Player {} draws'.format(i+1))
-                    self.players['player{}'.format(i)].draw(self.cards)
-                    print(self.players['player{}'.format(i)], '\n')
+                if choice.lower() == 'hit' or choice.lower() == 'h':  # Draw
+                    self.playerDraws(player_id=i)
                     
-                    if self.bust(self.players['player{}'.format(i)]):
-                        print("Bust!")
+                    if self.bust(player_id=i):
+                        print('Player {} bust!\n'.format(i+1))
                         active = False
                     else:
                         self.tidyHandValue(i)
@@ -217,10 +221,12 @@ class Game():
                     print("Please enter an option.")
         
         # Dealer draws
-        while dealerContinue():
-            print('Dealer draws')
-            self.players['dealer'].draw(self.cards)
-            print(self.players['dealer'], '\n')
+        while self.dealerContinue():
+            time.sleep(1.5)
+            self.playerDraws(dealer=True)
+        
+        if self.bust(dealer=True):
+            print('Dealer bust!')
     
     def __str__(self):
         # Print dealer
