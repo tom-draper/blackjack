@@ -35,6 +35,7 @@ class Hand():
             self.add_to_hand_value(card)
     
     def card_value(self, card):
+        """Takes a card and returns it's numerical value."""
         card_values = {
             **dict.fromkeys(['2C', '2D', '2H', '2S'], 2), 
             **dict.fromkeys(['3C', '3D', '3H', '3S'], 3),
@@ -51,7 +52,7 @@ class Hand():
         }
         
         if card in ['AC', 'AD', 'AH', 'AS']:
-            return (1, 11)
+            return (1, 11)  # Possible values for an Ace
         else:
             return card_values[card]
     
@@ -82,9 +83,10 @@ class Player():
         self.hand = Hand(available_cards)
     
     def draw(self, available_cards):
+        """Draws a random cardand adds it to the hand."""
         card = random.choice(available_cards)
-        self.hand.cards.append(card)
-        self.hand.add_to_hand_value(card)
+        self.hand.cards.append(card)  # Add card to hand
+        self.hand.add_to_hand_value(card)  # Update hand total
     
     def __str__(self):
         return 'Hand: {}'.format(self.hand)
@@ -112,6 +114,7 @@ class Game():
                 'QC', 'QD', 'QH', 'QS']
     
     def bust(self, dealer=False, player_id=0):
+        """Checks whether a given players hand has bust (hand value exceeded 21)."""
         if dealer:
             player = self.players['dealer']
         else:
@@ -126,8 +129,9 @@ class Game():
         player.hand.bust = bust
         return bust
 
-    def dealerContinue(self):
-        """Checks if any possible hand values is still under 17"""
+    def dealerContinueDraw(self):
+        """Checks if any possible hand values is still under 17.
+           Determines whether the dealer should continue to draw"""
         for hand_value in self.players['dealer'].hand.hand_value:
             if hand_value == 21:  # If hand value reached 21, stop drawing
                 return False
@@ -182,6 +186,7 @@ class Game():
         print(player, '\n')  # Display plaeyr hand status
     
     def allBust(self):
+        """Checks whether every player has bust (hand value exceeds 21)."""
         # Look for player who hasn't bust
         for i in range(self.no_players):
             if self.players['player{}'.format(i)].hand.bust == False:
@@ -191,8 +196,9 @@ class Game():
     def divider(self):
         print('-------------\n')
     
-    
     def checkWinner(self):
+        """Checks each player and prints whether they have won or lost against
+           the dealer."""
         for i in range(self.no_players):
             if self.players['player{}'.format(i)].hand.hand_value > self.players['dealer'].hand.hand_value:
                 print('Player {} wins!'.format(i+1))
@@ -200,6 +206,7 @@ class Game():
                 print('Player {} loses'.format(i+1))
     
     def playGame(self):
+        """Begins the game of Blackjack."""
         print('Game begin\n')
         
         # Dealer init
@@ -227,13 +234,14 @@ class Game():
                 else:
                     print("Please enter an option.")
         
+        # If every player hasn't bust, the dealer begins drawing
         if not self.allBust():
             self.divider()
             
             print("Dealer\n {}\n".format(self.players['dealer']))
             
             # Dealer draws
-            while self.dealerContinue():
+            while self.dealerContinueDraw():
                 time.sleep(1.5)
                 self.playerDraws(dealer=True)
             
