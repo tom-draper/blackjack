@@ -4,10 +4,14 @@ from itertools import count
 
 
 class Hand():
-    def __init__(self, available_cards):
+    def __init__(self):
+        self.bet = 0
         self.cards = []
         self.hand_value = (0,)  # Tuple containing possible values of this hand
         self.bust = False
+    
+    def placeBet(self, bet):
+        self.bet = bet
     
     def add_to_hand_value(self, card):
         """Add the value of the input card to the current hand value."""
@@ -60,27 +64,27 @@ class Hand():
         string = ''
         
         # Add each card in hand to string
-        for card in self.cards:
-            string += '{} '.format(card)
+        if len(self.cards) == 0:
+            string += 'None '
+        else:
+            for card in self.cards:
+                string += '{} '.format(card)
         
-        # Create sequence of hand values separates by spaces
+        # Add hand value(s) separates by spaces
         hand_value = ''
         for i, value in enumerate(self.hand_value):
             hand_value += '{}'.format(value)
             if i < len(self.hand_value) - 1:
                 hand_value += ' or '
         # Add the current hand total to string
-        string += '  ({})'.format(hand_value)
+        string += '({})'.format(hand_value)
             
         return string
 
 
-class Player():
-    _ids = count(-1)
-    
+class Person():
     def __init__(self, available_cards):
-        self.id = next(self._ids)
-        self.hand = Hand(available_cards)
+        self.hand = Hand()
     
     def draw(self, available_cards):
         """Draws a random cardand adds it to the hand."""
@@ -90,19 +94,45 @@ class Player():
     
     def __str__(self):
         return 'Hand: {}'.format(self.hand)
+
+class Player(Person):
+    _ids = count(0)
     
+    def __init__(self, available_cards, bank):
+        super().__init__(available_cards)
+        
+        self.id = next(self._ids)
+        self.bank = bank
+
+    def placeBet(self, bet):
+        if self.bank - bet < 0:
+            print('Insufficient funds')
+        else:
+            self.hand.bet = bet
+            self.bank -= bet
+    
+    def __str__(self):
+        return 'Player {} -> '.format(self.id+1) + super().__str__() + ', Bank: {}'.format(self.bank)
+
+class Dealer(Person):
+    def __init(self, available_cards):
+        super().__init__(available_cards)
+    
+    def __str__(self):
+        return 'Dealer -> ' + super().__str__()
+
 
 class Game():
-    def __init__(self, no_players=1):
+    def __init__(self, no_players=1, player_bank=1000):
         self.cards = self.refill()
         self.no_players = no_players
         
-        self.players = {}
+        self.people = {}
         # Add the dealer
-        self.players['dealer'] = Player(self.cards)
+        self.people['dealer'] = Dealer(self.cards)
         # Add each player
         for i in range(self.no_players):
-            self.players['player{}'.format(i)] = Player(self.cards)
+            self.people['player{}'.format(i)] = Player(self.cards, player_bank)
     
     def refill(self):
         return ['2C', '2D', '2H', '2S', '3C', '3D', '3H', '3S',
@@ -116,9 +146,9 @@ class Game():
     def bust(self, dealer=False, player_id=0):
         """Checks whether a given players hand has bust (hand value exceeded 21)."""
         if dealer:
-            player = self.players['dealer']
+            player = self.people['dealer']
         else:
-            player = self.players['player{}'.format(player_id)]
+            player = self.people['player{}'.format(player_id)]
         
         bust = True
         # Check if there is a possible hand value under 21
@@ -132,12 +162,12 @@ class Game():
     def dealerContinueDraw(self):
         """Checks if any possible hand values is still under 17.
            Determines whether the dealer should continue to draw"""
-        for hand_value in self.players['dealer'].hand.hand_value:
+        for hand_value in self.people['dealer'].hand.hand_value:
             if hand_value == 21:  # If hand value reached 21, stop drawing
                 return False
         
         # Check if any possible hand values are under 17
-        for hand_value in self.players['dealer'].hand.hand_value:
+        for hand_value in self.people['dealer'].hand.hand_value:
             if hand_value < 17:
                 return True
         
@@ -147,9 +177,9 @@ class Game():
     def tidyHandValue(self, dealer=False, player_id=0):
         """Remove any excess hand values over 21."""
         if dealer:
-            player = self.players['dealer']
+            player = self.people['dealer']
         else:
-            player = self.players['player{}'.format(player_id)]
+            player = self.people['player{}'.format(player_id)]
         
         # Remove any bust hand values if more than one hand value option exists
         if len(player.hand.hand_value) > 1:
@@ -168,10 +198,10 @@ class Game():
         """Player draws input number of times."""
         if dealer:
             print('Dealer draws', end='')
-            player = self.players['dealer']
+            player = self.people['dealer']
         else:
             print('Player {} draws'.format(player_id+1), end='')
-            player = self.players['player{}'.format(player_id)]
+            player = self.people['player{}'.format(player_id)]
         
         # If drawing multiple times display multiple
         if times > 1:
@@ -189,7 +219,7 @@ class Game():
         """Checks whether every player has bust (hand value exceeds 21)."""
         # Look for player who hasn't bust
         for i in range(self.no_players):
-            if self.players['player{}'.format(i)].hand.bust == False:
+            if self.people['player{}'.format(i)].hand.bust == False:
                 return False
         return True
     
@@ -200,7 +230,7 @@ class Game():
         """Checks each player and prints whether they have won or lost against
            the dealer."""
         for i in range(self.no_players):
-            if self.players['player{}'.format(i)].hand.hand_value > self.players['dealer'].hand.hand_value:
+            if self.people['player{}'.format(i)].hand.hand_value > self.people['dealer'].hand.hand_value:
                 print('Player {} wins!'.format(i+1))
             else:
                 print('Player {} loses'.format(i+1))
@@ -213,10 +243,17 @@ class Game():
         self.playerDraws(dealer=True)
         
         for i in range(self.no_players):
-            self.divider()
+            self.divider()  # Print a divider
             
             # Players init
             self.playerDraws(player_id=i, times=2)
+            while True:
+                bet = input('Enter bet: ')
+                if bet.isdigit():
+                    bet = int(bet)
+                    break
+            # PLace bet for this hand
+            self.people['player{}'.format(i)].placeBet(bet)
             
             # Players play
             while True:
@@ -238,7 +275,7 @@ class Game():
         if not self.allBust():
             self.divider()
             
-            print("Dealer\n {}\n".format(self.players['dealer']))
+            print("Dealer\n {}\n".format(self.people['dealer']))
             
             # Dealer draws
             while self.dealerContinueDraw():
@@ -251,15 +288,15 @@ class Game():
             self.checkWinner()
     
     def __str__(self):
-        # Print dealer
-        string = '> Dealer - {}\n'.format(self.players['dealer'])
-        # Print each player
-        for i in range(self.no_players):
-            string += '> Player {} - {}\n'.format(i+1, self.players['player{}'.format(i)])
+        string = ''
+        for key, value in self.people.items():
+            string += '  {}\n'.format(value)
+ 
         # Print list of cards remaining
         string += '> Cards remaining: {}'.format(self.cards)
         
         return string
 
 game = Game()
+print(game)
 game.playGame()
