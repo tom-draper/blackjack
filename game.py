@@ -83,7 +83,7 @@ class Hand():
 
 
 class Person():
-    def __init__(self, available_cards):
+    def __init__(self):
         self.hand = Hand()
     
     def draw(self, available_cards):
@@ -92,14 +92,17 @@ class Person():
         self.hand.cards.append(card)  # Add card to hand
         self.hand.add_to_hand_value(card)  # Update hand total
     
+    def reset(self):
+        self.hand = Hand()
+    
     def __str__(self):
         return 'Hand: {}'.format(self.hand)
 
 class Player(Person):
     _ids = count(0)
     
-    def __init__(self, available_cards, bank):
-        super().__init__(available_cards)
+    def __init__(self, bank):
+        super().__init__()
         
         self.id = next(self._ids)
         self.bank = bank
@@ -115,8 +118,8 @@ class Player(Person):
         return 'Player {} -> '.format(self.id+1) + super().__str__() + ', Bank: {}'.format(self.bank)
 
 class Dealer(Person):
-    def __init(self, available_cards):
-        super().__init__(available_cards)
+    def __init(self):
+        super().__init__()
     
     def __str__(self):
         return 'Dealer -> ' + super().__str__()
@@ -129,10 +132,10 @@ class Game():
         
         self.people = {}
         # Add the dealer
-        self.people['dealer'] = Dealer(self.cards)
+        self.people['dealer'] = Dealer()
         # Add each player
         for i in range(self.no_players):
-            self.people['player{}'.format(i)] = Player(self.cards, player_bank)
+            self.people['player{}'.format(i)] = Player(player_bank)
     
     def refill(self):
         return ['2C', '2D', '2H', '2S', '3C', '3D', '3H', '3S',
@@ -226,74 +229,111 @@ class Game():
     def divider(self):
         print('-------------\n')
     
-    def checkWinner(self):
+    def collectWinnings(self, player_id=0):
+        placed_bet = self.people['player{}'.format(player_id)].hand.bet
+        # Add winnings to player bank
+        self.people['player{}'.format(player_id)].bank += placed_bet * 2
+    
+    def checkWinners(self):
         """Checks each player and prints whether they have won or lost against
            the dealer."""
+        # Loop through each player
         for i in range(self.no_players):
-            if self.people['player{}'.format(i)].hand.hand_value > self.people['dealer'].hand.hand_value:
-                print('Player {} wins!'.format(i+1))
+            player = self.people['player{}'.format(i)]
+            if player.hand.hand_value > self.people['dealer'].hand.hand_value and \
+               self.people['dealer'].hand.bust and not player.hand.bust:
+                print('** Player {} wins! **'.format(i+1))
+                self.collectWinnings(player_id)
+            elif player.hand.bust and self.people['dealer'].hand.bust:
+                print('** Draw **')
             else:
-                print('Player {} loses'.format(i+1))
+                print('** Player {} loses **'.format(i+1))
+            print()
+    
+    def reset(self):
+        for person in self.people.values():
+            person.reset()
     
     def playGame(self):
         """Begins the game of Blackjack."""
-        print('Game begin\n')
-        
-        # Dealer init
-        self.playerDraws(dealer=True)
-        
-        for i in range(self.no_players):
-            self.divider()  # Print a divider
+        quit = False
+        game_count = 1
+        while not quit:
+            print('-- Game {} begin --\n'.format(game_count))
             
-            # Players init
-            self.playerDraws(player_id=i, times=2)
-            while True:
-                bet = input('Enter bet: ')
+            # Dealer init
+            self.playerDraws(dealer=True)
+            
+            for i in range(self.no_players):
+                self.divider()  # Print a divider
+                
+                # Players init
+                self.playerDraws(player_id=i, times=2)
+                
+                # Place bet for this hand
+                bet = input('> Enter bet: ')
+                if bet == 'q':
+                    quit = True
+                    break
                 if bet.isdigit():
                     bet = int(bet)
-                    break
-            # PLace bet for this hand
-            self.people['player{}'.format(i)].placeBet(bet)
-            
-            # Players play
-            while True:
-                choice = input('> Hit or stand: ')
-                print()
-                
-                if choice.lower() == 'hit' or choice.lower() == 'h':  # Draw
-                    self.playerDraws(player_id=i)
-                    
-                    if self.bust(player_id=i):
-                        print('Player {} bust!\n'.format(i+1))
-                        break
-                elif choice.lower() == "stand" or choice.lower() == "s":
-                    break
                 else:
-                    print("Please enter an option.")
-        
-        # If every player hasn't bust, the dealer begins drawing
-        if not self.allBust():
-            self.divider()
+                    bet = 0
+     
+                # PLace bet for this hand
+                self.people['player{}'.format(i)].placeBet(bet)
+                
+                # Players play
+                while True:
+                    choice = input('> Hit or stand: ')
+                    print()
+
+                    if choice == 'q':
+                        quit = True
+                        break
+                    
+                    if choice.lower() == 'hit' or choice.lower() == 'h':  # Draw
+                        self.playerDraws(player_id=i)
+                        
+                        if self.bust(player_id=i):
+                            print('** Player {} bust! **\n'.format(i+1))
+                            break
+                    elif choice.lower() == "stand" or choice.lower() == "s":
+                        break
+                    else:
+                        print("Please enter an option.")
+                if quit:
+                    break
+            if quit:
+                break
             
-            print("Dealer\n {}\n".format(self.people['dealer']))
+            # If every player hasn't bust, the dealer begins drawing
+            if not self.allBust():
+                self.divider()
+                
+                print("Dealer\n {}\n".format(self.people['dealer']))
+                
+                # Dealer draws
+                while self.dealerContinueDraw():
+                    time.sleep(1.5)
+                    self.playerDraws(dealer=True)
+                
+                if self.bust(dealer=True):
+                    print('** Dealer bust! **')
             
-            # Dealer draws
-            while self.dealerContinueDraw():
-                time.sleep(1.5)
-                self.playerDraws(dealer=True)
+                self.checkWinners()
             
-            if self.bust(dealer=True):
-                print('Dealer bust!')
-        
-            self.checkWinner()
+            self.reset()
+            game_count += 1
+            time.sleep(2)
     
     def __str__(self):
-        string = ''
-        for key, value in self.people.items():
-            string += '  {}\n'.format(value)
+        string = 'GAME STATUS:\n'
+        for person in self.people.values():
+            string += '{}\n'.format(person)
  
         # Print list of cards remaining
-        string += '> Cards remaining: {}'.format(self.cards)
+        string += 'Cards remaining: {}'.format(self.cards)
         
         return string
 
