@@ -17,7 +17,7 @@ class Hand():
         """Add the value of the input card to the current hand value."""
         card_value = self.card_value(card)
         
-        new_hand_value = []
+        new_hand_value = set()  # Collect unique hand values
         if type(card_value) is tuple:  # If more than one card value (drawn Ace)
             # Add each card value to each current hand value
             # E.g. hand value can be 6 or 16 due to holding an Ace
@@ -25,10 +25,10 @@ class Hand():
             #      new hand value would be 7, 16, 17 or 26
             for hand_value in self.hand_value:
                 for value in card_value:
-                    new_hand_value.append(hand_value + value)
+                    new_hand_value.add(hand_value + value)
         else:
             for hand_value in self.hand_value:
-                new_hand_value.append(hand_value + card_value)
+                new_hand_value.add(hand_value + card_value)
         
         self.hand_value = tuple(new_hand_value)  # Save result as tuple
     
@@ -229,10 +229,16 @@ class Game():
     def divider(self):
         print('-------------\n')
     
-    def collectWinnings(self, player_id=0):
+    def collectWinnings(self, player_id=0, draw=False):
         placed_bet = self.people['player{}'.format(player_id)].hand.bet
+        
+        if draw:
+            winnings = placed_bet
+        else:
+            winnings = placed_bet * 2
+            
         # Add winnings to player bank
-        self.people['player{}'.format(player_id)].bank += placed_bet * 2
+        self.people['player{}'.format(player_id)].bank += winnings
     
     def checkWinners(self):
         """Checks each player and prints whether they have won or lost against
@@ -240,12 +246,14 @@ class Game():
         # Loop through each player
         for i in range(self.no_players):
             player = self.people['player{}'.format(i)]
-            if player.hand.hand_value > self.people['dealer'].hand.hand_value and \
-               self.people['dealer'].hand.bust and not player.hand.bust:
+            if player.hand.hand_value > self.people['dealer'].hand.hand_value or \
+                    (self.people['dealer'].hand.bust and not player.hand.bust):
                 print('** Player {} wins! **'.format(i+1))
-                self.collectWinnings(player_id)
-            elif player.hand.bust and self.people['dealer'].hand.bust:
+                self.collectWinnings(i)
+            elif player.hand.hand_value == self.people['dealer'].hand.hand_value or \
+                        player.hand.bust and self.people['dealer'].hand.bust:
                 print('** Draw **')
+                self.collectWinnings(i, draw=True)
             else:
                 print('** Player {} loses **'.format(i+1))
             print()
@@ -259,7 +267,7 @@ class Game():
         quit = False
         game_count = 1
         while not quit:
-            print('-- Game {} begin --\n'.format(game_count))
+            print('-------- Game {} begin --------\n'.format(game_count))
             
             # Dealer init
             self.playerDraws(dealer=True)
@@ -309,9 +317,8 @@ class Game():
             
             # If every player hasn't bust, the dealer begins drawing
             if not self.allBust():
-                self.divider()
                 
-                print("Dealer\n {}\n".format(self.people['dealer']))
+                print("Dealer\n{}\n".format(self.people['dealer']))
                 
                 # Dealer draws
                 while self.dealerContinueDraw():
