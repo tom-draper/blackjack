@@ -16,7 +16,8 @@ class GUIGame(Game):
     GREEN_BG = (53, 101, 77)  # Poker green
     
     # Fonts
-    TITLE = pygame.font.SysFont('times new roman', 40)
+    TITLE = pygame.font.SysFont('hack', 50)
+    NORMAL = pygame.font.SysFont('hack', 20)
     
     def __init__(self):
         super().__init__()
@@ -25,7 +26,7 @@ class GUIGame(Game):
         pygame.display.set_caption("Blackjack")  # Title along the window bar
         
         # Get typical card image size (for displaying cards centrally)
-        self.cardSize = getCardSize('2D')  
+        self.cardSize = self.getCardSize('2D')
 
     def getCardSize(self, card):
         image = pygame.image.load('resources/{}.png'.format(card))
@@ -38,35 +39,53 @@ class GUIGame(Game):
         width, height = image.get_size()
         return pygame.transform.scale(image, (int(width*scale_factor), int(height*scale_factor)))
         
-    def displayCards(self, pos, dealer=False, player_id=0):
+    def displayCards(self, centre_pos, scale_factor, dealer=False, player_id=0):
         if dealer:
             cards = self.people['dealer'].hand.cards
         else:
             cards = self.people['player{}'.format(player_id)].hand.cards
-            
+        
+        # Convert centre position to top left corner position
+        pos = (centre_pos[0] - len(cards)*((self.cardSize[0]*scale_factor)/2), 
+               centre_pos[1] - ((self.cardSize[1]*scale_factor)/2))
+        
+        card_shift = 0
         for card in cards:
             image = pygame.image.load('resources/{}.png'.format(card))
-            image = self.scaleImg(image, 0.1)
-            self.win.blit(image, pos)
+            image = self.scaleImg(image, scale_factor)
+            self.win.blit(image, (pos[0] + card_shift, pos[1]))
+            card_shift += self.cardSize[0]/2
 
     def display(self):
-        # Window
+        # ----- Window -----
         self.win.fill(self.GREEN_BG)
         
-        # Title
+        # ----- Title -----
         text = self.TITLE.render('Blackjack', 1, self.BLACK)
         self.win.blit(text, (self.WIDTH/2 - text.get_width()/2, 20))
         
-        # Draw dealers cards
-        self.displayCards((self.WIDTH/2, 100), dealer=True)
+        # ----- Dealer -----
+        card_scale_factor = 0.1
+        # Display cards
+        centre_pos = (self.WIDTH/2, 100)
+        self.displayCards(centre_pos, card_scale_factor, dealer=True)
         
-        # Draw player cards
+        
+        # ----- Player ------
         for i in range(self.no_players):
-            self.displayCards((self.WIDTH/2, 100), dealer=True)
+            player = self.people['player{}'.format(i)]
+            
+            centre_pos = (self.WIDTH/2, 600)
+            self.displayCards(centre_pos, card_scale_factor, player_id=i)
+            # Display bank value
+            bank_value = player.bank
+            text = self.NORMAL.render('£{}'.format(bank_value), 1, self.BLACK)
+            self.win.blit(text, (self.WIDTH/2 - text.get_width()/2, 400))
         
         pygame.display.update()  # Update the display
 
     def playGame(self):
+        """Overrides the parent class playGame (command line version) method."""
         FPS = 60  # Max frames per second
         # Create a clock obeject to make sure our game runs at this FPS
         clock = pygame.time.Clock()
@@ -85,7 +104,6 @@ class GUIGame(Game):
                 
                 # Dealer init
                 self.playerDraws(dealer=True)
-                
                 self.display()
                 
                 for i in range(self.no_players):
@@ -93,6 +111,7 @@ class GUIGame(Game):
                     
                     # Players init
                     self.playerDraws(player_id=i, times=2)
+                    self.display()
                     
                     # Place bet for this hand
                     bet = input('> Enter bet: ')
