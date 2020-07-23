@@ -43,7 +43,17 @@ class GUIGame(Game):
     def scaleImg(self, image, scale_factor):
         width, height = image.get_size()
         return pygame.transform.scale(image, (int(width*scale_factor), int(height*scale_factor)))
-        
+    
+    def cardPileWidth(self, no_cards, scale_factor):
+        """Get width of a given number of cards when spread in a pile.
+           Each subsequent card lies half overlapping the previous card.
+           Top card is displayed fully.
+           1 card -> width 1 card wide
+           2 cards -> width 1.5 cards wide
+           3 cards -> width = 2 cards wide.
+        """
+        return ((no_cards+1)/2) * ((self.cardSize[0]*scale_factor))
+    
     def displayCards(self, centre_pos, scale_factor, dealer=False, player_id=0):
         if dealer:
             cards = self.people['dealer'].hand.cards
@@ -51,7 +61,7 @@ class GUIGame(Game):
             cards = self.people['player{}'.format(player_id)].hand.cards
         
         # Convert centre position to top left corner position
-        pos = (centre_pos[0] - ((len(cards)+1)/2)*((self.cardSize[0]*scale_factor)/2), 
+        pos = (centre_pos[0] - self.cardPileWidth(len(cards), scale_factor)/2, 
                centre_pos[1] - ((self.cardSize[1]*scale_factor)/2))
         
         shift = 0  # Shift each subsequent card along to get spread effect
@@ -96,6 +106,11 @@ class GUIGame(Game):
             bank_value = player.bank
             text = self.LARGER.render('£{}'.format(bank_value), 1, self.BLACK)
             self.win.blit(text, (100 - text.get_width()/2, self.HEIGHT-100))
+            # Display bet value
+            bet_value = player.hand.bet
+            if bet_value != 0:
+                text = self.NORMAL.render('£{}'.format(bet_value), 1, self.BLACK)
+                self.win.blit(text, (centre_pos[0] - text.get_width()/2 + 200, centre_pos[1]))
         
         pygame.display.update()  # Update the display
 
@@ -140,6 +155,7 @@ class GUIGame(Game):
         
                     # PLace bet for this hand
                     self.people['player{}'.format(i)].placeBet(bet)
+                    self.display()
                     
                     # Players play
                     while True:
