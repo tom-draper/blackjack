@@ -3,7 +3,7 @@ import time
 from itertools import count
 
 
-class Hand():
+class Hand:
     def __init__(self):
         self.bet = 0
         self.cards = []
@@ -82,7 +82,7 @@ class Hand():
         return string
 
 
-class Person():
+class Person:
     def __init__(self):
         self.hand = Hand()
     
@@ -125,11 +125,12 @@ class Dealer(Person):
         return 'Dealer -> ' + super().__str__()
 
 
-class Game():
+class Game:
     def __init__(self, no_players=1, player_bank=1000):
-        self.cards = self.refill()
+        self.cards = self.refillDeck()
         self.no_players = no_players
         
+        # People dict holds {name : person_object}
         self.people = {}
         # Add the dealer
         self.people['dealer'] = Dealer()
@@ -137,7 +138,8 @@ class Game():
         for i in range(self.no_players):
             self.people['player{}'.format(i)] = Player(player_bank)
     
-    def refill(self):
+    def refillDeck(self):
+        """Return a refilled deck of cards list."""
         return ['2C', '2D', '2H', '2S', '3C', '3D', '3H', '3S',
                 '4C', '4D', '4H', '4S', '5C', '5D', '5H', '5S',
                 '6C', '6D', '6H', '6S', '7C', '7D', '7H', '7S',
@@ -213,6 +215,8 @@ class Game():
             print()
             
         for _ in range(times):
+            if len(self.cards) == 0:
+                self.refillDeck()
             player.draw(self.cards)
         
         self.tidyHandValue(dealer, player_id)
@@ -263,7 +267,7 @@ class Game():
             person.reset()
     
     def playGame(self):
-        """Begins the game of Blackjack."""
+        """Begins the game of command line Blackjack."""
         quit = False
         game_count = 1
         while not quit:
@@ -317,7 +321,6 @@ class Game():
             
             # If every player hasn't bust, the dealer begins drawing
             if not self.allBust():
-                
                 print("Dealer\n{}\n".format(self.people['dealer']))
                 
                 # Dealer draws
@@ -343,7 +346,3 @@ class Game():
         string += 'Cards remaining: {}'.format(self.cards)
         
         return string
-
-game = Game()
-print(game)
-game.playGame()
