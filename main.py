@@ -10,6 +10,10 @@ class GUIGame(Game):
     WIDTH = 1200
     HEIGHT = 1000
     
+    # Buttons
+    RADIUS = 50
+    BTN_GAP = 40
+    
     # Colours
     WHITE = (255, 255, 255)
     BLACK = (0, 0, 0)
@@ -17,10 +21,11 @@ class GUIGame(Game):
     
     # Fonts
     TITLE = pygame.font.SysFont('hack', 50)
+    LARGER = pygame.font.SysFont('hack', 40)
     NORMAL = pygame.font.SysFont('hack', 20)
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, player_bank=1000):
+        super().__init__(player_bank=1000)
 
         self.win = pygame.display.set_mode((self.WIDTH, self.HEIGHT))  # Set resolution with tuple
         pygame.display.set_caption("Blackjack")  # Title along the window bar
@@ -49,12 +54,12 @@ class GUIGame(Game):
         pos = (centre_pos[0] - ((len(cards)+1)/2)*((self.cardSize[0]*scale_factor)/2), 
                centre_pos[1] - ((self.cardSize[1]*scale_factor)/2))
         
-        card_shift = 0  # Shift each subsequent card along to get spread effect
+        shift = 0  # Shift each subsequent card along to get spread effect
         for card in cards:
             image = pygame.image.load('resources/{}.png'.format(card))
             image = self.scaleImg(image, scale_factor)
-            self.win.blit(image, (pos[0] + card_shift, pos[1]))
-            card_shift += (self.cardSize[0]*scale_factor)/2
+            self.win.blit(image, (pos[0] + shift, pos[1]))
+            shift += (self.cardSize[0]*scale_factor)/2
 
     def display(self):
         # ----- Window -----
@@ -64,12 +69,22 @@ class GUIGame(Game):
         text = self.TITLE.render('Blackjack', 1, self.BLACK)
         self.win.blit(text, (self.WIDTH/2 - text.get_width()/2, 20))
         
+        # ----- Buttons ------
+        btns = ['Hit', 'Stand']
+        for i, btn in enumerate(btns):
+            # Draw circle
+            centre_pos = (int(self.WIDTH/2 - (self.BTN_GAP*(len(btns)-1))/2 - ((self.RADIUS*len(btns))/2)) + ((self.RADIUS*2 + self.BTN_GAP) * i), 
+                          int(self.HEIGHT/2))
+            pygame.draw.circle(self.win, self.BLACK, centre_pos, self.RADIUS, 3)
+            # Draw text in centre of button
+            text = self.NORMAL.render(btns[i], 1, self.BLACK)
+            self.win.blit(text, (centre_pos[0] - text.get_width()/2, centre_pos[1] - text.get_height()/2))
+        
         # ----- Dealer -----
         card_scale_factor = 0.2
         # Display cards
-        centre_pos = (self.WIDTH/2, 200)
+        centre_pos = (self.WIDTH/2, 250)
         self.displayCards(centre_pos, card_scale_factor, dealer=True)
-        
         
         # ----- Player ------
         for i in range(self.no_players):
@@ -79,8 +94,8 @@ class GUIGame(Game):
             self.displayCards(centre_pos, card_scale_factor, player_id=i)
             # Display bank value
             bank_value = player.bank
-            text = self.NORMAL.render('£{}'.format(bank_value), 1, self.BLACK)
-            self.win.blit(text, (self.WIDTH/2 - text.get_width()/2, 400))
+            text = self.LARGER.render('£{}'.format(bank_value), 1, self.BLACK)
+            self.win.blit(text, (100 - text.get_width()/2, self.HEIGHT-100))
         
         pygame.display.update()  # Update the display
 
