@@ -46,15 +46,15 @@ class GUIGame(Game):
             cards = self.people['player{}'.format(player_id)].hand.cards
         
         # Convert centre position to top left corner position
-        pos = (centre_pos[0] - len(cards)*((self.cardSize[0]*scale_factor)/2), 
+        pos = (centre_pos[0] - ((len(cards)+1)/2)*((self.cardSize[0]*scale_factor)/2), 
                centre_pos[1] - ((self.cardSize[1]*scale_factor)/2))
         
-        card_shift = 0
+        card_shift = 0  # Shift each subsequent card along to get spread effect
         for card in cards:
             image = pygame.image.load('resources/{}.png'.format(card))
             image = self.scaleImg(image, scale_factor)
             self.win.blit(image, (pos[0] + card_shift, pos[1]))
-            card_shift += self.cardSize[0]/2
+            card_shift += (self.cardSize[0]*scale_factor)/2
 
     def display(self):
         # ----- Window -----
@@ -65,9 +65,9 @@ class GUIGame(Game):
         self.win.blit(text, (self.WIDTH/2 - text.get_width()/2, 20))
         
         # ----- Dealer -----
-        card_scale_factor = 0.1
+        card_scale_factor = 0.2
         # Display cards
-        centre_pos = (self.WIDTH/2, 100)
+        centre_pos = (self.WIDTH/2, 200)
         self.displayCards(centre_pos, card_scale_factor, dealer=True)
         
         
@@ -75,7 +75,7 @@ class GUIGame(Game):
         for i in range(self.no_players):
             player = self.people['player{}'.format(i)]
             
-            centre_pos = (self.WIDTH/2, 600)
+            centre_pos = (self.WIDTH/2, 800)
             self.displayCards(centre_pos, card_scale_factor, player_id=i)
             # Display bank value
             bank_value = player.bank
