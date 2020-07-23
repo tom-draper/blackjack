@@ -32,6 +32,7 @@ class GUIGame(Game):
         
         # Get typical card image size (for displaying cards centrally)
         self.cardSize = self.getCardSize('2D')
+        self.quit = False
 
     def getCardSize(self, card):
         image = pygame.image.load('resources/{}.png'.format(card))
@@ -97,25 +98,37 @@ class GUIGame(Game):
         self.displayCards(centre_pos, card_scale_factor, dealer=True)
         
         # ----- Player ------
-        for i in range(self.no_players):
-            player = self.people['player{}'.format(i)]
-            
-            centre_pos = (self.WIDTH/2, 800)
-            self.displayCards(centre_pos, card_scale_factor, player_id=i)
-            # Display bank value
-            bank_value = player.bank
-            text = self.LARGER.render('£{}'.format(bank_value), 1, self.BLACK)
-            self.win.blit(text, (100 - text.get_width()/2, self.HEIGHT-100))
-            # Display bet value
-            bet_value = player.hand.bet
-            if bet_value != 0:
-                text = self.NORMAL.render('£{}'.format(bet_value), 1, self.BLACK)
-                self.win.blit(text, (centre_pos[0] - text.get_width()/2 + 200, centre_pos[1]))
+        player = self.people['player0']
+        
+        centre_pos = (self.WIDTH/2, 800)
+        self.displayCards(centre_pos, card_scale_factor, player_id=i)
+        # Display bank value
+        bank_value = player.bank
+        text = self.LARGER.render('£{}'.format(bank_value), 1, self.BLACK)
+        self.win.blit(text, (100 - text.get_width()/2, self.HEIGHT-100))
+        # Display bet value
+        bet_value = player.hand.bet
+        if bet_value != 0:
+            text = self.NORMAL.render('£{}'.format(bet_value), 1, self.BLACK)
+            self.win.blit(text, (centre_pos[0] - text.get_width()/2 + 200, centre_pos[1]))
         
         pygame.display.update()  # Update the display
+    
+    def handleEvents(self):
+        handled = False
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:  # Window close button pressed
+                self.quit = True
+                handled = True
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                m_x, m_y = pygame.mouse.get_pos()  # x,y pos of mouse
+                print(m_x, m_y)
+                handled = True
+        return handled
 
     def playGame(self):
-        """Overrides the parent class playGame (command line version) method."""
+        """One player GUI Blackjack game.
+           Overrides the parent class playGame (command line version) method."""
         FPS = 60  # Max frames per second
         # Create a clock obeject to make sure our game runs at this FPS
         clock = pygame.time.Clock()
@@ -126,7 +139,7 @@ class GUIGame(Game):
         while run:
             clock.tick(FPS)
             
-            # ------ PLAYGAME -------
+            # ------ PLAY GAME -------
             quit = False
             game_count = 1
             while not quit:
@@ -136,50 +149,32 @@ class GUIGame(Game):
                 self.playerDraws(dealer=True)
                 self.display()
                 
-                for i in range(self.no_players):
-                    self.divider()  # Print a divider
+                self.divider()  # Print a divider
+                
+                # Players init
+                self.playerDraws(player_id=i, times=2)
+                self.display()
+                self.handleEvents()
+                
+                # Place bet for this hand
+                # bet = input('> Enter bet: ')
+                # if bet == 'q':
+                #     quit = True
+                #     break
+                # if bet.isdigit():
+                #     bet = int(bet)
+                # else:
+                #     bet = 0
+    
+                # PLace bet for this hand
+                self.people['player0'].placeBet(0)
+                self.display()
                     
-                    # Players init
-                    self.playerDraws(player_id=i, times=2)
-                    self.display()
-                    
-                    # Place bet for this hand
-                    bet = input('> Enter bet: ')
-                    if bet == 'q':
-                        quit = True
+                # Handle players button action
+                while True:
+                    # Wait until event is handled/action is taken
+                    if self.handleEvents:
                         break
-                    if bet.isdigit():
-                        bet = int(bet)
-                    else:
-                        bet = 0
-        
-                    # PLace bet for this hand
-                    self.people['player{}'.format(i)].placeBet(bet)
-                    self.display()
-                    
-                    # Players play
-                    while True:
-                        choice = input('> Hit or stand: ')
-                        print()
-
-                        if choice == 'q':
-                            quit = True
-                            break
-                        
-                        if choice.lower() == 'hit' or choice.lower() == 'h':  # Draw
-                            self.playerDraws(player_id=i)
-                            
-                            if self.bust(player_id=i):
-                                print('** Player {} bust! **\n'.format(i+1))
-                                break
-                        elif choice.lower() == "stand" or choice.lower() == "s":
-                            break
-                        else:
-                            print("Please enter an option.")
-                    if quit:
-                        break
-                if quit:
-                    break
                 
                 # If every player hasn't bust, the dealer begins drawing
                 if not self.allBust():
@@ -200,13 +195,6 @@ class GUIGame(Game):
                 game_count += 1
                 time.sleep(2)
                 
-                
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:  # Window close button pressed
-                        run = False
-                    if event.type == pygame.MOUSEBUTTONDOWN:
-                        m_x, m_y = pygame.mouse.get_pos()  # x,y pos of mouse
-                        print(m_x, m_y)
 
             self.display()
 
