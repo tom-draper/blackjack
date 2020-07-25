@@ -19,8 +19,10 @@ class GUIBlackjack(Blackjack):
     WHITE = (255, 255, 255)
     BLACK = (0, 0, 0)
     GREEN_BG = (53, 101, 77)  # Poker green
+    RED = (255, 0, 0)
 
     # Fonts
+    HUGE = pygame.font.SysFont('hack', 60)
     TITLE = pygame.font.SysFont('hack', 50)
     LARGER = pygame.font.SysFont('hack', 40)
     NORMAL = pygame.font.SysFont('hack', 20)
@@ -138,17 +140,26 @@ class GUIBlackjack(Blackjack):
         # Display cards
         centre_pos = (self.WIDTH/2, 250)
         self.displayCards(centre_pos, card_scale_factor, dealer=True)
+        # Display bust
+        if self.people['dealer'].hand.bust:
+            text = self.HUGE.render('{}'.format('BUST'), 1, self.RED)
+            self.win.blit(text, (centre_pos))
         # Display hand value
         hand_value_str = self.buildHandValueString(dealer=True)
         text = self.NORMAL.render('{}'.format(hand_value_str), 1, self.BLACK)
         self.win.blit(text, (centre_pos[0] - text.get_width()/2, 
                              centre_pos[1] + (self.cardSize[1]*card_scale_factor)/2 + 20))
+        
 
         # ----- Player ------
         player = self.people['player0']
-
+        
         centre_pos = (self.WIDTH/2, 800)
         self.displayCards(centre_pos, card_scale_factor)
+        # Display bust
+        if player.hand.bust:
+            text = self.HUGE.render('{}'.format('BUST'), 1, self.RED)
+            self.win.blit(text, (centre_pos))
         # Display bank value
         bank_value = player.bank
         text = self.LARGER.render('£{}'.format(bank_value), 1, self.BLACK)
@@ -214,11 +225,14 @@ class GUIBlackjack(Blackjack):
             #     bet = int(bet)
             # else:
             #     bet = 0
-            bet = 0
+            bet = 10
 
             # PLace bet for this hand
             self.people['player0'].placeBet(bet)
             self.display()
+            
+            
+            # Play
 
             # If every player hasn't bust, the dealer begins drawing
             if not self.allBust():
@@ -235,7 +249,9 @@ class GUIBlackjack(Blackjack):
                     print('** Dealer bust! **')
 
                 self.checkWinners()
+                self.display()
 
+            time.sleep(2)
             self.reset()  # Redraw new hands
             game_count += 1
             time.sleep(2)
