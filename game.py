@@ -111,7 +111,7 @@ class Player(Person):
         if self.bank - bet < 0:
             print('Insufficient funds')
         else:
-            self.hand.bet = bet
+            self.hand.bet += bet
             self.bank -= bet
     
     def __str__(self):
@@ -148,7 +148,7 @@ class Blackjack:
                 'JC', 'JD', 'JH', 'JS', 'KC', 'KD', 'KH', 'KS', 
                 'QC', 'QD', 'QH', 'QS']
     
-    def bust(self, dealer=False, player_id=0):
+    def checkBust(self, dealer=False, player_id=0):
         """Checks whether a given players hand has bust (hand value exceeded 21)."""
         if dealer:
             player = self.people['dealer']
@@ -307,7 +307,7 @@ class Blackjack:
                     if choice.lower() == 'hit' or choice.lower() == 'h':  # Draw
                         self.playerDraws(player_id=i)
                         
-                        if self.bust(player_id=i):
+                        if self.checkBust(player_id=i):
                             print('** Player {} bust! **\n'.format(i+1))
                             break
                     elif choice.lower() == "stand" or choice.lower() == "s":
