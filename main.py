@@ -25,6 +25,7 @@ class GUIBlackjack(Blackjack):
     GREEN_BG = (53, 101, 77)  # Poker green
     YELLOW = (150, 150, 0)
     BROWN = (180, 180, 180)
+    GREY = (200, 200, 200)
 
     # Fonts
     GIGANTIC = pygame.font.SysFont('hack', 150)
@@ -48,6 +49,8 @@ class GUIBlackjack(Blackjack):
         self.default_game_status = self.GameStatus(round_over=False, draw=None, player_won=None, winnings=0)
         
         self.buttons = {}  # Dict {name : (x,y)}
+        self.btns_active = True
+        self.bet_btns_active = True
         self.quit = False
         self.stand = False
 
@@ -110,13 +113,17 @@ class GUIBlackjack(Blackjack):
             # Iterate through positions left to right along the middle of the screen
             # Width = centre - (half the length of all buttons and gaps in between) 
             #                + (gap between centre of two buttons)*(button number) 
+            if self.btns_active:
+                btn_colour = self.BLACK
+            else:
+                btn_colour = self.GREY
+                
             centre_pos = (int(self.WIDTH/2 
                               - ((self.RADIUS*2 + self.BTN_GAP) * (len(btns)-1)/2)
                               + (self.RADIUS*2 + self.BTN_GAP) * i),
                           int(self.HEIGHT/2))
-            pygame.draw.circle(self.win, self.BLACK,
+            pygame.draw.circle(self.win, btn_colour,
                                centre_pos, self.RADIUS, 3)
-            
             
             # Draw text in centre of button
             text = self.NORMAL.render(btns[i], 1, self.BLACK)
@@ -281,14 +288,12 @@ class GUIBlackjack(Blackjack):
         while not self.quit:
             clock.tick(FPS)
 
-            # ------ PLAY GAME -------
+            # ------ Play round -------
             game_count = 1
 
             # Dealer init
             self.playerDraws(dealer=True)
             self.display(self.default_game_status)
-
-            self.divider()  # Print a divider
 
             # Players init
             self.playerDraws(times=2)
@@ -296,9 +301,10 @@ class GUIBlackjack(Blackjack):
             
             # Handle actions until player stands
             self.stand = False
-            while not self.stand:
-                self.handleEvents()
-                self.checkBust(player_id=0)
+            while (not self.stand and not self.people['player0'].hand.bust) and not self.quit:
+                self.handleEvents()  # Update stand (if stand action selected)
+                if self.checkBust(player_id=0):  # Update players hand bust status
+                    self.btns_active = False  # Grey out action buttons
             
             # If every player hasn't bust, the dealer begins drawing
             if not self.allBust() and not self.quit:
@@ -321,6 +327,8 @@ class GUIBlackjack(Blackjack):
                 self.checkWinners()
 
             self.reset()  # Redraw new hands
+            self.btns_active = True
+            self.bet_btns_active = True
             game_count += 1
             
             # Wait before begin next round 

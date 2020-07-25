@@ -91,6 +91,22 @@ class Person:
         card = random.choice(available_cards)
         self.hand.cards.append(card)  # Add card to hand
         self.hand.add_to_hand_value(card)  # Update hand total
+        self.tidyHandValue()
+    
+    def tidyHandValue(self):
+        """Remove any excess hand values over 21."""
+        # Remove any bust hand values if more than one hand value option exists
+        if len(self.hand.hand_value) > 1:
+            new_hand_value = []
+            for hand_value in self.hand.hand_value:
+                if hand_value == 21:
+                    new_hand_value = [21]  # Overwrite hand value, only keep 21
+                    break
+                elif hand_value <= 21:
+                    new_hand_value.append(hand_value)
+                    
+            # Update player's hand value
+            self.hand.hand_value = tuple(new_hand_value)
     
     def reset(self):
         self.hand = Hand()
@@ -177,27 +193,6 @@ class Blackjack:
                 return True
         
         return False
-        
-
-    def tidyHandValue(self, dealer=False, player_id=0):
-        """Remove any excess hand values over 21."""
-        if dealer:
-            player = self.people['dealer']
-        else:
-            player = self.people['player{}'.format(player_id)]
-        
-        # Remove any bust hand values if more than one hand value option exists
-        if len(player.hand.hand_value) > 1:
-            new_hand_value = []
-            for hand_value in player.hand.hand_value:
-                if hand_value == 21:
-                    new_hand_value = [21]  # Overwrite hand value, only keep 21
-                    break
-                elif hand_value <= 21:
-                    new_hand_value.append(hand_value)
-                    
-            # Update player's hand value
-            player.hand.hand_value = tuple(new_hand_value)
     
     def playerDraws(self, dealer=False, player_id=0, times=1):
         """Player draws input number of times."""
@@ -219,7 +214,6 @@ class Blackjack:
                 self.refillDeck()
             player.draw(self.cards)
         
-        self.tidyHandValue(dealer, player_id)
         print(player, '\n')  # Display plaeyr hand status
     
     def allBust(self):
@@ -346,3 +340,8 @@ class Blackjack:
         string += 'Cards remaining: {}'.format(self.cards)
         
         return string
+
+if __name__ == "__main__":
+    game = Blackjack()
+    game.main()
+    pygame.quit()
