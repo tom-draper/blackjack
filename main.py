@@ -181,7 +181,7 @@ class GUIBlackjack(Blackjack):
         # Display winnings added to bank value
         if game_status.round_over:                            
             if game_status.winnings > 0:
-                winnings_text = self.NORMAL.render('+ {}'.format(game_status.winnings), 1, self.BLACK)
+                winnings_text = self.NORMAL.render('+{}'.format(game_status.winnings), 1, self.BLACK)
                 self.win.blit(winnings_text, (100 - text.get_width()/2 + 130, 
                                               self.HEIGHT + winnings_text.get_height()/2 - 100))
         # Display hand value
@@ -295,11 +295,14 @@ class GUIBlackjack(Blackjack):
                 print("Dealer\n{}\n".format(self.people['dealer']))
 
                 # Dealer draws
+                wait_before_draw = 1500
+                last = pygame.time.get_ticks()
                 while self.dealerContinueDraw():
-                    self.handleEvents()
-                    pygame.time.wait(1500)
-                    self.playerDraws(dealer=True)
-                    self.display(default_game_status)
+                    now = pygame.time.get_ticks()
+                    if now - last >= wait_before_draw:
+                        self.playerDraws(dealer=True)
+                        self.display(default_game_status)
+                        last = now
                     self.handleEvents()
 
                 if self.bust(dealer=True):
