@@ -1,5 +1,4 @@
 import pygame
-import time
 from collections import namedtuple
 from game import Blackjack
 
@@ -33,7 +32,7 @@ class GUIBlackjack(Blackjack):
     LARGER = pygame.font.SysFont('hack', 40)
     NORMAL = pygame.font.SysFont('hack', 20)
     
-    GameStatus = namedtuple('GameStatus', 'round_over draw player_won')
+    GameStatus = namedtuple('GameStatus', 'round_over draw player_won winnings')
 
     def __init__(self, player_bank=1000):
         super().__init__(player_bank=1000)
@@ -101,7 +100,7 @@ class GUIBlackjack(Blackjack):
 
     def displayButtons(self):
         # Central buttons
-        btns = ['Hit', 'Stand', 'Split', 'a', 'b']
+        btns = ['Hit', 'Stand']
         for i, btn in enumerate(btns):
             # Draw a circle
             # Iterate through positions left to right along the middle of the screen
@@ -177,7 +176,14 @@ class GUIBlackjack(Blackjack):
         # Display bank value
         bank_value = player.bank
         text = self.LARGER.render('£{}'.format(bank_value), 1, self.BLACK)
-        self.win.blit(text, (100 - text.get_width()/2, self.HEIGHT-100))
+        self.win.blit(text, (100 - text.get_width()/2, 
+                             self.HEIGHT - 100))
+        # Display winnings added to bank value
+        if game_status.round_over:                            
+            if game_status.winnings > 0:
+                winnings_text = self.NORMAL.render('+ {}'.format(game_status.winnings), 1, self.BLACK)
+                self.win.blit(winnings_text, (100 - text.get_width()/2 + 130, 
+                                              self.HEIGHT + winnings_text.get_height()/2 - 100))
         # Display hand value
         hand_value_str = self.buildHandValueString()
         text = self.NORMAL.render('{}'.format(hand_value_str), 1, self.BLACK)
@@ -187,19 +193,20 @@ class GUIBlackjack(Blackjack):
         bet_value = player.hand.bet
         if bet_value != 0:
             text = self.NORMAL.render('£{}'.format(bet_value), 1, self.BLACK)
-            self.win.blit(
-                text, (centre_pos[0] - text.get_width()/2 + 200, centre_pos[1]))
+            self.win.blit(text, (centre_pos[0] - text.get_width()/2 + 200, 
+                                 centre_pos[1]))
         
         # Display "you win", "draw" or "you lose"
         if game_status.round_over:
             centre_pos = (int(self.WIDTH/2), int(self.HEIGHT/2))
             if game_status.draw:
-                text = self.HUGE.render('DRAW', 1, self.YELLOW)
+                text = self.GIGANTIC.render('DRAW', 1, self.YELLOW)
             elif game_status.player_won:
                 text = self.GIGANTIC.render('YOU WIN', 1, self.GREEN)
             else:
                 text = self.GIGANTIC.render('YOU LOSE', 1, self.RED)
-            self.win.blit(text, (centre_pos[0] - text.get_width()/2, centre_pos[1] - text.get_height()/2))
+            self.win.blit(text, (centre_pos[0] - text.get_width()/2, 
+                                 centre_pos[1] - text.get_height()/2))
 
         pygame.display.update()  # Update the display
 
@@ -221,14 +228,16 @@ class GUIBlackjack(Blackjack):
         player = self.people['player0']
         if player.hand.hand_value > self.people['dealer'].hand.hand_value or \
                 (self.people['dealer'].hand.bust and not player.hand.bust):
-            game_status = self.GameStatus(round_over=True, draw=False, player_won=True)
+            winnings = player.hand.bet*2
+            game_status = self.GameStatus(round_over=True, draw=False, player_won=True, winnings=winnings)
             self.collectWinnings(player_id=0)
         elif player.hand.hand_value == self.people['dealer'].hand.hand_value or \
                     player.hand.bust and self.people['dealer'].hand.bust:
-            game_status = self.GameStatus(round_over=True, draw=True, player_won=None)
+            winnings = player.hand.bet*2
+            game_status = self.GameStatus(round_over=True, draw=True, player_won=None, winnings=winnings)
             self.collectWinnings(player_id=0, draw=True)
         else:
-            game_status = self.GameStatus(round_over=True, draw=False, player_won=False)
+            game_status = self.GameStatus(round_over=True, draw=False, player_won=False, winnings=0)
          
         self.display(game_status)
 
@@ -239,7 +248,7 @@ class GUIBlackjack(Blackjack):
         # Create a clock obeject to make sure our game runs at this FPS
         clock = pygame.time.Clock()
         
-        default_game_status = self.GameStatus(round_over=False, draw=None, player_won=None)
+        default_game_status = self.GameStatus(round_over=False, draw=None, player_won=None, winnings=0)
 
         self.display(default_game_status)
 
@@ -287,9 +296,11 @@ class GUIBlackjack(Blackjack):
 
                 # Dealer draws
                 while self.dealerContinueDraw():
-                    time.sleep(1.5)
+                    self.handleEvents()
+                    pygame.time.wait(1500)
                     self.playerDraws(dealer=True)
                     self.display(default_game_status)
+                    self.handleEvents()
 
                 if self.bust(dealer=True):
                     print('** Dealer bust! **')
@@ -298,7 +309,7 @@ class GUIBlackjack(Blackjack):
 
             self.reset()  # Redraw new hands
             game_count += 1
-            time.sleep(2)
+            pygame.time.wait(2000)
 
 game = GUIBlackjack()
 game.main()
