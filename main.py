@@ -74,7 +74,7 @@ class GUIBlackjack(Blackjack):
 
     def displayButtons(self):
         # Central buttons
-        btns = ['Hit', 'Stand']
+        btns = ['Hit', 'Stand', 'Split']
         for i, btn in enumerate(btns):
             # Draw a circle
             # Iterate through positions left to right along the middle of the screen
@@ -124,8 +124,9 @@ class GUIBlackjack(Blackjack):
         self.displayCards(centre_pos, card_scale_factor, dealer=True)
         # Display hand value
         hand_value = self.people['dealer'].hand.hand_value
-        text = self.NORMAL.render('£{}'.format(had_value), 1, self.BLACK)
-        self.win.blit(text, (centre_pos[0] - text.get_width()/2 + 200, centre_pos[1]))
+        text = self.NORMAL.render('{}'.format(hand_value), 1, self.BLACK)
+        self.win.blit(text, (centre_pos[0] - text.get_width()/2, 
+                             centre_pos[1] + (self.cardSize[1]*card_scale_factor)/2 + 20))
 
         # ----- Player ------
         player = self.people['player0']
@@ -136,6 +137,11 @@ class GUIBlackjack(Blackjack):
         bank_value = player.bank
         text = self.LARGER.render('£{}'.format(bank_value), 1, self.BLACK)
         self.win.blit(text, (100 - text.get_width()/2, self.HEIGHT-100))
+        # Display hand value
+        hand_value = player.hand.hand_value
+        text = self.NORMAL.render('{}'.format(hand_value), 1, self.BLACK)
+        self.win.blit(text, (centre_pos[0] - text.get_width()/2, 
+                             centre_pos[1] + (self.cardSize[1]*card_scale_factor)/2 + 20))
         # Display bet value
         bet_value = player.hand.bet
         if bet_value != 0:
@@ -166,8 +172,7 @@ class GUIBlackjack(Blackjack):
 
         self.display()
 
-        run = True
-        while run:
+        while not self.quit:
             clock.tick(FPS)
 
             # ------ PLAY GAME -------
