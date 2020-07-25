@@ -18,8 +18,12 @@ class GUIBlackjack(Blackjack):
     # Colours
     WHITE = (255, 255, 255)
     BLACK = (0, 0, 0)
-    GREEN_BG = (53, 101, 77)  # Poker green
     RED = (255, 0, 0)
+    GREEN = (0, 255, 0)
+    BLUE = (0, 0, 255)
+    GREEN_BG = (53, 101, 77)  # Poker green
+    YELLOW = (150, 150, 0)
+    BROWN = (180, 180, 180)
 
     # Fonts
     HUGE = pygame.font.SysFont('hack', 80)
@@ -113,6 +117,7 @@ class GUIBlackjack(Blackjack):
         
         # Bet buttons
         bet_btns = ['1', '5', '10', '50', '100']
+        btn_colours = [self.BROWN, self.RED, self.BLUE, self.YELLOW, self.BLACK]
         for i, btn in enumerate(bet_btns):
             # Draw a circle
             btn_range = (self.BTN_GAP*(len(btns)-1)) / \
@@ -122,7 +127,7 @@ class GUIBlackjack(Blackjack):
                           int(self.HEIGHT/2 
                               - ((self.RADIUS*2 + self.BTN_GAP) * (len(bet_btns)-1)/2)
                               + (self.RADIUS*2 + self.BTN_GAP) * i))
-            pygame.draw.circle(self.win, self.BLACK,
+            pygame.draw.circle(self.win, btn_colours[i],
                                centre_pos, self.RADIUS, 3)
             # Draw text in centre of button
             text = self.NORMAL.render(bet_btns[i], 1, self.BLACK)
