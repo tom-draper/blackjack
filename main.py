@@ -61,6 +61,14 @@ class GUIBlackjack(Blackjack):
     def scaleImg(self, image, scale_factor):
         width, height = image.get_size()
         return pygame.transform.scale(image, (int(width*scale_factor), int(height*scale_factor)))
+    
+    def setTimer(self, time):
+        last = pygame.time.get_ticks()
+        while True and not self.quit:
+            now = pygame.time.get_ticks()
+            if now - last >= time:
+                break
+            self.handleEvents()
 
     def cardPileWidth(self, no_cards, scale_factor):
         """Get width of a given number of cards when spread in a pile.
@@ -240,16 +248,8 @@ class GUIBlackjack(Blackjack):
                             self.people['player0'].draw(self.cards)
                         elif btn == 'Stand':
                             self.stand = True
-                        elif btn == '1':
-                            self.people['player0'].placeBet(1)
-                        elif btn == '5':
-                            self.people['player0'].placeBet(5)
-                        elif btn == '10':
-                            self.people['player0'].placeBet(10)
-                        elif btn == '50':
-                            self.people['player0'].placeBet(50)
-                        elif btn == '100':
-                            self.people['player0'].placeBet(100)
+                        elif btn.isdigit():
+                            self.people['player0'].placeBet(int(btn))
                 handled = True
 
         # Show updates
@@ -282,29 +282,33 @@ class GUIBlackjack(Blackjack):
         FPS = 60  # Max frames per second
         # Create a clock obeject to make sure our game runs at this FPS
         clock = pygame.time.Clock()
+        game_count = 0
         
         self.display(self.default_game_status)
 
         while not self.quit:
             clock.tick(FPS)
 
-            # ------ Play round -------
-            game_count = 1
-
             # Dealer init
             self.playerDraws(dealer=True)
             self.display(self.default_game_status)
 
+            self.setTimer(1000)
+            
             # Players init
-            self.playerDraws(times=2)
+            self.playerDraws()
+            self.setTimer(1000)
+            self.playerDraws()
             self.display(self.default_game_status)
             
-            # Handle actions until player stands
+            # Handle actions until player stands, busts or quits
             self.stand = False
             while (not self.stand and not self.people['player0'].hand.bust) and not self.quit:
                 self.handleEvents()  # Update stand (if stand action selected)
-                if self.checkBust(player_id=0):  # Update players hand bust status
+                if self.checkBust():  # Update players hand bust status
                     self.btns_active = False  # Grey out action buttons
+                    self.setTimer(1000)
+                    
             
             # If every player hasn't bust, the dealer begins drawing
             if not self.allBust() and not self.quit:
@@ -321,7 +325,7 @@ class GUIBlackjack(Blackjack):
                         last = now
                     self.handleEvents()
 
-                if self.bust(dealer=True):
+                if self.checkBust(dealer=True):
                     print('** Dealer bust! **')
 
                 self.checkWinners()
@@ -331,14 +335,9 @@ class GUIBlackjack(Blackjack):
             self.bet_btns_active = True
             game_count += 1
             
-            # Wait before begin next round 
-            wait = 2000
-            last = pygame.time.get_ticks()
-            while True and not self.quit:
-                now = pygame.time.get_ticks()
-                if now - last >= wait:
-                    break
-                self.handleEvents()
+            # Wait before begin next round
+            self.setTimer(2000)
+            
                 
 
 if __name__ == "__main__":
