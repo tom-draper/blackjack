@@ -55,6 +55,22 @@ class GUIBlackjack(Blackjack):
         """
         return ((no_cards+1)/2) * ((self.cardSize[0]*scale_factor))
 
+    def buildHandValueString(self, dealer=False, player_id=0):
+        if dealer:
+            hand_value = self.people['dealer'].hand.hand_value
+        else:
+            hand_value = self.people['player{}'.format(player_id)].hand.hand_value
+        
+        string = ''
+        for i, value in enumerate(hand_value):
+            string += str(value)
+            if i >= len(hand_value)-1:
+                string += ' '
+            else:
+                string += ' or '
+        
+        return string
+
     def displayCards(self, centre_pos, scale_factor, dealer=False, player_id=0):
         if dealer:
             cards = self.people['dealer'].hand.cards
@@ -123,8 +139,8 @@ class GUIBlackjack(Blackjack):
         centre_pos = (self.WIDTH/2, 250)
         self.displayCards(centre_pos, card_scale_factor, dealer=True)
         # Display hand value
-        hand_value = self.people['dealer'].hand.hand_value
-        text = self.NORMAL.render('{}'.format(hand_value), 1, self.BLACK)
+        hand_value_str = self.buildHandValueString(dealer=True)
+        text = self.NORMAL.render('{}'.format(hand_value_str), 1, self.BLACK)
         self.win.blit(text, (centre_pos[0] - text.get_width()/2, 
                              centre_pos[1] + (self.cardSize[1]*card_scale_factor)/2 + 20))
 
@@ -138,8 +154,8 @@ class GUIBlackjack(Blackjack):
         text = self.LARGER.render('£{}'.format(bank_value), 1, self.BLACK)
         self.win.blit(text, (100 - text.get_width()/2, self.HEIGHT-100))
         # Display hand value
-        hand_value = player.hand.hand_value
-        text = self.NORMAL.render('{}'.format(hand_value), 1, self.BLACK)
+        hand_value_str = self.buildHandValueString()
+        text = self.NORMAL.render('{}'.format(hand_value_str), 1, self.BLACK)
         self.win.blit(text, (centre_pos[0] - text.get_width()/2, 
                              centre_pos[1] + (self.cardSize[1]*card_scale_factor)/2 + 20))
         # Display bet value
@@ -176,7 +192,6 @@ class GUIBlackjack(Blackjack):
             clock.tick(FPS)
 
             # ------ PLAY GAME -------
-            quit = False
             game_count = 1
 
             # Dealer init
@@ -199,9 +214,10 @@ class GUIBlackjack(Blackjack):
             #     bet = int(bet)
             # else:
             #     bet = 0
+            bet = 0
 
             # PLace bet for this hand
-            self.people['player0'].placeBet(0)
+            self.people['player0'].placeBet(bet)
             self.display()
 
             # If every player hasn't bust, the dealer begins drawing
@@ -220,13 +236,11 @@ class GUIBlackjack(Blackjack):
 
                 self.checkWinners()
 
-            self.reset()
+            self.reset()  # Redraw new hands
             game_count += 1
             time.sleep(2)
 
             self.display()
-            self.handleEvents()
-
 
 game = GUIBlackjack()
 game.main()
