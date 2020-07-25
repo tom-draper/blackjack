@@ -125,7 +125,7 @@ class Dealer(Person):
         return 'Dealer -> ' + super().__str__()
 
 
-class Game:
+class Blackjack:
     def __init__(self, no_players=1, player_bank=1000):
         self.cards = self.refillDeck()
         self.no_players = no_players
@@ -247,7 +247,7 @@ class Game:
     def checkWinners(self):
         """Checks each player and prints whether they have won or lost against
            the dealer."""
-        # Loop through each player
+        # Loop through each player2
         for i in range(self.no_players):
             player = self.people['player{}'.format(i)]
             if player.hand.hand_value > self.people['dealer'].hand.hand_value or \
@@ -266,7 +266,7 @@ class Game:
         for person in self.people.values():
             person.reset()
     
-    def playGame(self):
+    def main(self):
         """Begins the game of command line Blackjack."""
         quit = False
         game_count = 1
