@@ -22,7 +22,7 @@ class GUIBlackjack(Blackjack):
     RED = (255, 0, 0)
 
     # Fonts
-    HUGE = pygame.font.SysFont('hack', 60)
+    HUGE = pygame.font.SysFont('hack', 80)
     TITLE = pygame.font.SysFont('hack', 50)
     LARGER = pygame.font.SysFont('hack', 40)
     NORMAL = pygame.font.SysFont('hack', 20)
@@ -92,20 +92,25 @@ class GUIBlackjack(Blackjack):
 
     def displayButtons(self):
         # Central buttons
-        btns = ['Hit', 'Stand', 'Split']
+        btns = ['Hit', 'Stand', 'Split', 'a', 'b']
         for i, btn in enumerate(btns):
             # Draw a circle
             # Iterate through positions left to right along the middle of the screen
-            centre_pos = (int(self.WIDTH/2 - (self.BTN_GAP*(len(btns)-1))/2 -
-                              ((self.RADIUS*len(btns))/2)) + ((self.RADIUS*2 + self.BTN_GAP) * i),
+            # Width = centre - (half the length of all buttons and gaps in between) 
+            #                + (gap between centre of two buttons)*(button number) 
+            centre_pos = (int(self.WIDTH/2 
+                              - ((self.RADIUS*2 + self.BTN_GAP) * (len(btns)-1)/2)
+                              + (self.RADIUS*2 + self.BTN_GAP) * i),
                           int(self.HEIGHT/2))
             pygame.draw.circle(self.win, self.BLACK,
                                centre_pos, self.RADIUS, 3)
+            
+            
             # Draw text in centre of button
             text = self.NORMAL.render(btns[i], 1, self.BLACK)
             self.win.blit(
                 text, (centre_pos[0] - text.get_width()/2, centre_pos[1] - text.get_height()/2))
-
+        
         # Bet buttons
         bet_btns = ['1', '5', '10', '50', '100']
         for i, btn in enumerate(bet_btns):
@@ -114,9 +119,9 @@ class GUIBlackjack(Blackjack):
                 2 - ((self.RADIUS*len(btns))/2)
             # Iterate through positions top to bottom down the right side of the window
             centre_pos = (int(self.WIDTH - 100),
-                          int(self.HEIGHT/2 -
-                              ((self.RADIUS*2 + self.BTN_GAP) * (len(bet_btns)-1)/2) +
-                              (self.RADIUS*2 + self.BTN_GAP) * i))
+                          int(self.HEIGHT/2 
+                              - ((self.RADIUS*2 + self.BTN_GAP) * (len(bet_btns)-1)/2)
+                              + (self.RADIUS*2 + self.BTN_GAP) * i))
             pygame.draw.circle(self.win, self.BLACK,
                                centre_pos, self.RADIUS, 3)
             # Draw text in centre of button
