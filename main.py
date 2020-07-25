@@ -312,7 +312,15 @@ class GUIBlackjack(Blackjack):
 
             self.reset()  # Redraw new hands
             game_count += 1
-            pygame.time.wait(2000)
+            # Wait before begin next round 
+            wait = 2000
+            last = pygame.time.get_ticks()
+            while True:
+                now = pygame.time.get_ticks()
+                if now - last >= wait:
+                    break
+                self.handleEvents()
+                
 
 game = GUIBlackjack()
 game.main()
