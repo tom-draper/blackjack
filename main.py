@@ -367,5 +367,4 @@ class GUIBlackjack(Blackjack):
 if __name__ == "__main__":
     game = GUIBlackjack()
     game.main()
-
     pygame.quit()
