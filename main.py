@@ -146,8 +146,8 @@ class GUIBlackjack(Blackjack):
             text = self.NORMAL.render(btns[i], 1, btn_colour)
             self.win.blit(text, (centre_pos[0] - text.get_width()/2, 
                                  centre_pos[1] - text.get_height()/2))
-            self.buttons[btn] = (centre_pos[0] - text.get_width()/2, 
-                                    centre_pos[1] - text.get_height()/2)
+            # Add buttons centre positions to class dictionary
+            self.buttons[btn] = centre_pos
         
         # Bet buttons
         bet_btns = ['1', '5', '10', '50', '100']
@@ -172,8 +172,8 @@ class GUIBlackjack(Blackjack):
             text = self.NORMAL.render(bet_btns[i], 1, text_colour)
             self.win.blit(text, (centre_pos[0] - text.get_width()/2, 
                                  centre_pos[1] - text.get_height()/2))
-            self.buttons[bet_btns[i]] = (centre_pos[0] - text.get_width()/2, 
-                                         centre_pos[1] - text.get_height()/2)
+            # Add buttons centre positions to class dictionary
+            self.buttons[bet_btns[i]] = centre_pos
 
     def display(self, game_status):
         # ----- Window -----
