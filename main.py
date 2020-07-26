@@ -19,13 +19,14 @@ class GUIBlackjack(Blackjack):
     # Colours
     WHITE = (255, 255, 255)
     BLACK = (0, 0, 0)
-    RED = (255, 0, 0)
-    GREEN = (0, 255, 0)
-    BLUE = (0, 0, 255)
-    GREEN_BG = (53, 101, 77)  # Poker green
-    YELLOW = (150, 150, 0)
-    BROWN = (180, 180, 180)
-    GREY = (200, 200, 200)
+    GREEN = (0, 255, 0)  # Win message
+    GREEN_BG = (53, 101, 77)  # Poker green backgroud
+    BROWN = (180, 180, 180)  # 1 chip
+    RED = (255, 0, 0)  # 5 chip and lose message
+    BLUE = (0, 0, 255)  # 10 chip
+    YELLOW = (150, 150, 0)  # 50 chip and draw message
+    CHIP_BLACK = (220, 220, 220)  # 100 chip
+    GREY = (84, 84, 84)  # Inactive button
 
     # Fonts
     GIGANTIC = pygame.font.SysFont('hack', 150)
@@ -49,7 +50,7 @@ class GUIBlackjack(Blackjack):
         self.default_game_status = self.GameStatus(round_over=False, draw=None, player_won=None, winnings=0)
         
         self.buttons = {}  # Dict {name : (x,y)}
-        self.btns_active = True
+        self.action_btns_active = True
         self.bet_btns_active = True
         self.quit = False
         self.stand = False
@@ -62,13 +63,22 @@ class GUIBlackjack(Blackjack):
         width, height = image.get_size()
         return pygame.transform.scale(image, (int(width*scale_factor), int(height*scale_factor)))
     
-    def setTimer(self, time):
+    def setTimer(self, time, game_status):
         last = pygame.time.get_ticks()
         while True and not self.quit:
             now = pygame.time.get_ticks()
             if now - last >= time:
                 break
             self.handleEvents()
+            self.display(game_status)
+
+    def enableAllButtons(self):
+        self.action_btns_active = True
+        self.bet_btns_active = True
+    
+    def disableAllButtons(self):
+        self.action_btns_active = False
+        self.bet_btns_active = False
 
     def cardPileWidth(self, no_cards, scale_factor):
         """Get width of a given number of cards when spread in a pile.
@@ -121,7 +131,7 @@ class GUIBlackjack(Blackjack):
             # Iterate through positions left to right along the middle of the screen
             # Width = centre - (half the length of all buttons and gaps in between) 
             #                + (gap between centre of two buttons)*(button number) 
-            if self.btns_active:
+            if self.action_btns_active:
                 btn_colour = self.BLACK
             else:
                 btn_colour = self.GREY
@@ -130,11 +140,10 @@ class GUIBlackjack(Blackjack):
                               - ((self.RADIUS*2 + self.BTN_GAP) * (len(btns)-1)/2)
                               + (self.RADIUS*2 + self.BTN_GAP) * i),
                           int(self.HEIGHT/2))
-            pygame.draw.circle(self.win, btn_colour,
-                               centre_pos, self.RADIUS, 3)
+            pygame.draw.circle(self.win, btn_colour, centre_pos, self.RADIUS, 3)
             
             # Draw text in centre of button
-            text = self.NORMAL.render(btns[i], 1, self.BLACK)
+            text = self.NORMAL.render(btns[i], 1, btn_colour)
             self.win.blit(text, (centre_pos[0] - text.get_width()/2, 
                                  centre_pos[1] - text.get_height()/2))
             self.buttons[btn] = (centre_pos[0] - text.get_width()/2, 
@@ -144,18 +153,23 @@ class GUIBlackjack(Blackjack):
         bet_btns = ['1', '5', '10', '50', '100']
         btn_colours = [self.BROWN, self.RED, self.BLUE, self.YELLOW, self.BLACK]
         for i, btn in enumerate(bet_btns):
+            if self.bet_btns_active:
+                btn_colour = btn_colours[i]
+                text_colour = self.BLACK
+            else:
+                btn_colour = self.GREY
+                text_colour = self.GREY
+            
             # Draw a circle
-            btn_range = (self.BTN_GAP*(len(btns)-1)) / \
-                2 - ((self.RADIUS*len(btns))/2)
+            btn_range = (self.BTN_GAP*(len(btns)-1))/2 - ((self.RADIUS*len(btns))/2)
             # Iterate through positions top to bottom down the right side of the window
             centre_pos = (int(self.WIDTH - 100),
                           int(self.HEIGHT/2 
                               - ((self.RADIUS*2 + self.BTN_GAP) * (len(bet_btns)-1)/2)
                               + (self.RADIUS*2 + self.BTN_GAP) * i))
-            pygame.draw.circle(self.win, btn_colours[i],
-                               centre_pos, self.RADIUS, 3)
+            pygame.draw.circle(self.win, btn_colour, centre_pos, self.RADIUS, 3)
             # Draw text in centre of button
-            text = self.NORMAL.render(bet_btns[i], 1, self.BLACK)
+            text = self.NORMAL.render(bet_btns[i], 1, text_colour)
             self.win.blit(text, (centre_pos[0] - text.get_width()/2, 
                                  centre_pos[1] - text.get_height()/2))
             self.buttons[bet_btns[i]] = (centre_pos[0] - text.get_width()/2, 
@@ -244,16 +258,19 @@ class GUIBlackjack(Blackjack):
                 for btn, pos in self.buttons.items():
                     d = math.sqrt((pos[0] - m_x)**2 + (pos[1] - m_y)**2)
                     if d < self.RADIUS:  # If click inside this button
-                        if btn == 'Hit':
+                        if btn == 'Hit' and self.action_btns_active:
                             self.people['player0'].draw(self.cards)
-                        elif btn == 'Stand':
+                            # Player no longer able to bet
+                            self.bet_btns_active = False
+                        elif btn == 'Stand' and self.action_btns_active:
                             self.stand = True
-                        elif btn.isdigit():
+                            # Turn off all buttons while dealer plays
+                            self.bet_btns_active = False
+                            self.action_btns_active = False
+                        elif btn.isdigit() and self.bet_btns_active:
                             self.people['player0'].placeBet(int(btn))
                 handled = True
 
-        # Show updates
-        self.display(self.default_game_status)
         return handled
     
     def checkWinners(self):
@@ -261,8 +278,7 @@ class GUIBlackjack(Blackjack):
            the dealer."""
 
         player = self.people['player0']
-        if player.hand.hand_value > self.people['dealer'].hand.hand_value or \
-                (self.people['dealer'].hand.bust and not player.hand.bust):
+        if (player.hand.hand_value > self.people['dealer'].hand.hand_value or self.people['dealer'].hand.bust) and not player.hand.bust:
             winnings = player.hand.bet*2
             game_status = self.GameStatus(round_over=True, draw=False, player_won=True, winnings=winnings)
             self.collectWinnings(player_id=0)
@@ -274,7 +290,7 @@ class GUIBlackjack(Blackjack):
         else:
             game_status = self.GameStatus(round_over=True, draw=False, player_won=False, winnings=0)
          
-        self.display(game_status)
+        return game_status
 
     def main(self):
         """One player GUI Blackjack game.
@@ -284,30 +300,37 @@ class GUIBlackjack(Blackjack):
         clock = pygame.time.Clock()
         game_count = 0
         
-        self.display(self.default_game_status)
+        
 
         while not self.quit:
             clock.tick(FPS)
-
+            
+            # Disable buttons while set up
+            self.disableAllButtons()
+            self.display(self.default_game_status)
+            
             # Dealer init
             self.playerDraws(dealer=True)
             self.display(self.default_game_status)
-
-            self.setTimer(1000)
+            self.setTimer(1000, self.default_game_status)
             
             # Players init
             self.playerDraws()
-            self.setTimer(1000)
+            self.setTimer(1000, self.default_game_status)
             self.playerDraws()
             self.display(self.default_game_status)
+            
+            # Ensure all buttons active before play
+            self.enableAllButtons()
             
             # Handle actions until player stands, busts or quits
             self.stand = False
             while (not self.stand and not self.people['player0'].hand.bust) and not self.quit:
                 self.handleEvents()  # Update stand (if stand action selected)
+                self.display(self.default_game_status)
                 if self.checkBust():  # Update players hand bust status
-                    self.btns_active = False  # Grey out action buttons
-                    self.setTimer(1000)
+                    self.action_btns_active = False  # Grey out action buttons if bust
+                    self.setTimer(1000, self.default_game_status)
                     
             
             # If every player hasn't bust, the dealer begins drawing
@@ -324,20 +347,21 @@ class GUIBlackjack(Blackjack):
                         self.display(self.default_game_status)
                         last = now
                     self.handleEvents()
-
-                if self.checkBust(dealer=True):
-                    print('** Dealer bust! **')
-
-                self.checkWinners()
-
-            self.reset()  # Redraw new hands
-            self.btns_active = True
-            self.bet_btns_active = True
-            game_count += 1
+                
+                # Update dealer bust status
+                self.checkBust(dealer=True)
+                self.setTimer(2000, self.default_game_status)  # Pause to view the result
             
-            # Wait before begin next round
-            self.setTimer(2000)
-            
+            if not self.quit:
+                # Get new game status for a finished round
+                fin_game_status = self.checkWinners()
+                self.display(fin_game_status)
+                self.setTimer(2000, fin_game_status)  # Pause to view the result
+                
+                self.reset()  # Redraw new hands
+                self.action_btns_active = True
+                self.bet_btns_active = True
+                game_count += 1
                 
 
 if __name__ == "__main__":

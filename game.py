@@ -183,9 +183,8 @@ class Blackjack:
     def dealerContinueDraw(self):
         """Checks if any possible hand values is still under 17.
            Determines whether the dealer should continue to draw"""
-        for hand_value in self.people['dealer'].hand.hand_value:
-            if hand_value == 21:  # If hand value reached 21, stop drawing
-                return False
+        if self.checkBust(dealer=True):
+            return False
         
         # Check if any possible hand values are under 17
         for hand_value in self.people['dealer'].hand.hand_value:
