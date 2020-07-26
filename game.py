@@ -3,7 +3,7 @@ import time
 from itertools import count
 
 
-class Hand():
+class Hand:
     def __init__(self):
         self.bet = 0
         self.cards = []
@@ -82,7 +82,7 @@ class Hand():
         return string
 
 
-class Person():
+class Person:
     def __init__(self):
         self.hand = Hand()
     
@@ -91,6 +91,22 @@ class Person():
         card = random.choice(available_cards)
         self.hand.cards.append(card)  # Add card to hand
         self.hand.add_to_hand_value(card)  # Update hand total
+        self.tidyHandValue()
+    
+    def tidyHandValue(self):
+        """Remove any excess hand values over 21."""
+        # Remove any bust hand values if more than one hand value option exists
+        if len(self.hand.hand_value) > 1:
+            new_hand_value = []
+            for hand_value in self.hand.hand_value:
+                if hand_value == 21:
+                    new_hand_value = [21]  # Overwrite hand value, only keep 21
+                    break
+                elif hand_value <= 21:
+                    new_hand_value.append(hand_value)
+                    
+            # Update player's hand value
+            self.hand.hand_value = tuple(new_hand_value)
     
     def reset(self):
         self.hand = Hand()
@@ -111,7 +127,7 @@ class Player(Person):
         if self.bank - bet < 0:
             print('Insufficient funds')
         else:
-            self.hand.bet = bet
+            self.hand.bet += bet
             self.bank -= bet
     
     def __str__(self):
@@ -125,11 +141,12 @@ class Dealer(Person):
         return 'Dealer -> ' + super().__str__()
 
 
-class Game():
+class Blackjack:
     def __init__(self, no_players=1, player_bank=1000):
-        self.cards = self.refill()
+        self.cards = self.refillDeck()
         self.no_players = no_players
         
+        # People dict holds {name : person_object}
         self.people = {}
         # Add the dealer
         self.people['dealer'] = Dealer()
@@ -137,7 +154,8 @@ class Game():
         for i in range(self.no_players):
             self.people['player{}'.format(i)] = Player(player_bank)
     
-    def refill(self):
+    def refillDeck(self):
+        """Return a refilled deck of cards list."""
         return ['2C', '2D', '2H', '2S', '3C', '3D', '3H', '3S',
                 '4C', '4D', '4H', '4S', '5C', '5D', '5H', '5S',
                 '6C', '6D', '6H', '6S', '7C', '7D', '7H', '7S',
@@ -146,7 +164,7 @@ class Game():
                 'JC', 'JD', 'JH', 'JS', 'KC', 'KD', 'KH', 'KS', 
                 'QC', 'QD', 'QH', 'QS']
     
-    def bust(self, dealer=False, player_id=0):
+    def checkBust(self, dealer=False, player_id=0):
         """Checks whether a given players hand has bust (hand value exceeded 21)."""
         if dealer:
             player = self.people['dealer']
@@ -165,9 +183,8 @@ class Game():
     def dealerContinueDraw(self):
         """Checks if any possible hand values is still under 17.
            Determines whether the dealer should continue to draw"""
-        for hand_value in self.people['dealer'].hand.hand_value:
-            if hand_value == 21:  # If hand value reached 21, stop drawing
-                return False
+        if self.checkBust(dealer=True):
+            return False
         
         # Check if any possible hand values are under 17
         for hand_value in self.people['dealer'].hand.hand_value:
@@ -175,27 +192,6 @@ class Game():
                 return True
         
         return False
-        
-
-    def tidyHandValue(self, dealer=False, player_id=0):
-        """Remove any excess hand values over 21."""
-        if dealer:
-            player = self.people['dealer']
-        else:
-            player = self.people['player{}'.format(player_id)]
-        
-        # Remove any bust hand values if more than one hand value option exists
-        if len(player.hand.hand_value) > 1:
-            new_hand_value = []
-            for hand_value in player.hand.hand_value:
-                if hand_value == 21:
-                    new_hand_value = [21]  # Overwrite hand value, only keep 21
-                    break
-                elif hand_value <= 21:
-                    new_hand_value.append(hand_value)
-                    
-            # Update player's hand value
-            player.hand.hand_value = tuple(new_hand_value)
     
     def playerDraws(self, dealer=False, player_id=0, times=1):
         """Player draws input number of times."""
@@ -213,9 +209,10 @@ class Game():
             print()
             
         for _ in range(times):
+            if len(self.cards) == 0:
+                self.refillDeck()
             player.draw(self.cards)
         
-        self.tidyHandValue(dealer, player_id)
         print(player, '\n')  # Display plaeyr hand status
     
     def allBust(self):
@@ -243,7 +240,7 @@ class Game():
     def checkWinners(self):
         """Checks each player and prints whether they have won or lost against
            the dealer."""
-        # Loop through each player
+        # Loop through each player2
         for i in range(self.no_players):
             player = self.people['player{}'.format(i)]
             if player.hand.hand_value > self.people['dealer'].hand.hand_value or \
@@ -262,8 +259,8 @@ class Game():
         for person in self.people.values():
             person.reset()
     
-    def playGame(self):
-        """Begins the game of Blackjack."""
+    def main(self):
+        """Begins the game of command line Blackjack."""
         quit = False
         game_count = 1
         while not quit:
@@ -303,7 +300,7 @@ class Game():
                     if choice.lower() == 'hit' or choice.lower() == 'h':  # Draw
                         self.playerDraws(player_id=i)
                         
-                        if self.bust(player_id=i):
+                        if self.checkBust(player_id=i):
                             print('** Player {} bust! **\n'.format(i+1))
                             break
                     elif choice.lower() == "stand" or choice.lower() == "s":
@@ -317,7 +314,6 @@ class Game():
             
             # If every player hasn't bust, the dealer begins drawing
             if not self.allBust():
-                
                 print("Dealer\n{}\n".format(self.people['dealer']))
                 
                 # Dealer draws
@@ -344,6 +340,7 @@ class Game():
         
         return string
 
-game = Game()
-print(game)
-game.playGame()
+if __name__ == "__main__":
+    game = Blackjack()
+    game.main()
+    pygame.quit()
