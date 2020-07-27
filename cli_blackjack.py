@@ -3,10 +3,42 @@ import time
 from itertools import count
 
 
+class Card():
+    def __init__(self, card_code):
+        self.card_code = card_code
+        self.path = 'resources/{}.png'.format(card_code)
+        self.card_value = self.get_card_value()
+    
+    def get_card_value(self):
+        """Takes a card and returns it's numerical value."""
+        card_values = {
+            **dict.fromkeys(['2C', '2D', '2H', '2S'], 2), 
+            **dict.fromkeys(['3C', '3D', '3H', '3S'], 3),
+            **dict.fromkeys(['4C', '4D', '4H', '4S'], 4),
+            **dict.fromkeys(['5C', '5D', '5H', '5S'], 5),
+            **dict.fromkeys(['6C', '6D', '6H', '6S'], 6),
+            **dict.fromkeys(['7C', '7D', '7H', '7S'], 7),
+            **dict.fromkeys(['8C', '8D', '8H', '8S'], 8),
+            **dict.fromkeys(['9C', '9D', '9H', '9S'], 9),
+            **dict.fromkeys(['10C', '10D', '3H', '10S',
+                             'JC', 'JD', 'JH', 'JS',
+                             'KC', 'KD', 'KH', 'KS',
+                             'QC', 'QD', 'QH', 'QS'], 10),
+        }
+        
+        if self.card_code in ['AC', 'AD', 'AH', 'AS']:
+            return (1, 11)  # Possible values for an Ace
+        else:
+            return card_values[self.card_code]
+    
+    def __str__(self):
+        return self.card_code
+
+
 class Hand:
     def __init__(self):
         self.bet = 0
-        self.cards = []
+        self.cards = []  # List of card objects
         self.hand_value = (0,)  # Tuple containing possible values of this hand
         self.bust = False
     
@@ -15,7 +47,7 @@ class Hand:
     
     def add_to_hand_value(self, card):
         """Add the value of the input card to the current hand value."""
-        card_value = self.card_value(card)
+        card_value = card.card_value
         
         new_hand_value = set()  # Collect unique hand values
         if type(card_value) is tuple:  # If more than one card value (drawn Ace)
@@ -37,28 +69,6 @@ class Hand:
         self.hand_value = (0,)
         for card in self.cards:
             self.add_to_hand_value(card)
-    
-    def card_value(self, card):
-        """Takes a card and returns it's numerical value."""
-        card_values = {
-            **dict.fromkeys(['2C', '2D', '2H', '2S'], 2), 
-            **dict.fromkeys(['3C', '3D', '3H', '3S'], 3),
-            **dict.fromkeys(['4C', '4D', '4H', '4S'], 4),
-            **dict.fromkeys(['5C', '5D', '5H', '5S'], 5),
-            **dict.fromkeys(['6C', '6D', '6H', '6S'], 6),
-            **dict.fromkeys(['7C', '7D', '7H', '7S'], 7),
-            **dict.fromkeys(['8C', '8D', '8H', '8S'], 8),
-            **dict.fromkeys(['9C', '9D', '9H', '9S'], 9),
-            **dict.fromkeys(['10C', '10D', '3H', '10S',
-                             'JC', 'JD', 'JH', 'JS',
-                             'KC', 'KD', 'KH', 'KS',
-                             'QC', 'QD', 'QH', 'QS'], 10),
-        }
-        
-        if card in ['AC', 'AD', 'AH', 'AS']:
-            return (1, 11)  # Possible values for an Ace
-        else:
-            return card_values[card]
     
     def __str__(self):
         string = ''
@@ -88,7 +98,8 @@ class Person:
     
     def draw(self, available_cards):
         """Draws a random cardand adds it to the hand."""
-        card = random.choice(available_cards)
+        card_code = random.choice(available_cards)
+        card = Card(card_code)
         self.hand.cards.append(card)  # Add card to hand
         self.hand.add_to_hand_value(card)  # Update hand total
         self.tidyHandValue()
