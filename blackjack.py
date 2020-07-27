@@ -1,7 +1,7 @@
 import pygame
 import math
 from collections import namedtuple
-from game import Blackjack
+from cli_blackjack import Blackjack
 
 pygame.init()  # Initialise pygame
 
@@ -118,7 +118,7 @@ class GUIBlackjack(Blackjack):
 
         shift = 0  # Shift each subsequent card along to get spread effect
         for card in cards:
-            image = pygame.image.load('resources/{}.png'.format(card))
+            image = pygame.image.load(card.path)
             image = self.scaleImg(image, scale_factor)
             self.win.blit(image, (pos[0] + shift, pos[1]))
             shift += (self.cardSize[0]*scale_factor)/2
@@ -126,6 +126,13 @@ class GUIBlackjack(Blackjack):
     def displayButtons(self):
         # Central buttons
         btns = ['Hit', 'Stand']
+        
+        # Check if split is an option
+        player_cards = self.people['player0'].hand.cards
+        card_values = [card.card_value for card in player_cards]
+        if all(card_value == player_cards[0].card_value for card_value in card_values):
+            btns.append('Split')  # Add split button
+
         for i, btn in enumerate(btns):
             # Draw a circle
             # Iterate through positions left to right along the middle of the screen
@@ -300,8 +307,6 @@ class GUIBlackjack(Blackjack):
         clock = pygame.time.Clock()
         game_count = 0
         
-        
-
         while not self.quit:
             clock.tick(FPS)
             
@@ -331,7 +336,6 @@ class GUIBlackjack(Blackjack):
                 if self.checkBust():  # Update players hand bust status
                     self.action_btns_active = False  # Grey out action buttons if bust
                     self.setTimer(1000, self.default_game_status)
-                    
             
             # If every player hasn't bust, the dealer begins drawing
             if not self.allBust() and not self.quit:
@@ -362,7 +366,6 @@ class GUIBlackjack(Blackjack):
                 self.action_btns_active = True
                 self.bet_btns_active = True
                 game_count += 1
-                
 
 if __name__ == "__main__":
     game = GUIBlackjack()
