@@ -274,6 +274,8 @@ class GUIBlackjack(Blackjack):
                             # Turn off all buttons while dealer plays
                             self.bet_btns_active = False
                             self.action_btns_active = False
+                        elif btn == 'Split' and self.action_btns_active:
+                            pass
                         elif btn.isdigit() and self.bet_btns_active:
                             self.people['player0'].placeBet(int(btn))
                 handled = True
@@ -337,7 +339,7 @@ class GUIBlackjack(Blackjack):
                     self.action_btns_active = False  # Grey out action buttons if bust
                     self.setTimer(1000, self.default_game_status)
             
-            # If every player hasn't bust, the dealer begins drawing
+            # Dealer begins drawing
             if not self.allBust() and not self.quit:
                 print("Dealer\n{}\n".format(self.people['dealer']))
 
