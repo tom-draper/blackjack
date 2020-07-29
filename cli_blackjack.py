@@ -6,7 +6,7 @@ from itertools import count
 class Card():
     def __init__(self, card_code):
         self.card_code = card_code
-        self.path = 'resources/{}.png'.format(card_code)
+        self.path = f'resources/{card_code}.png'
         self.card_value = self.get_card_value()
     
     def get_card_value(self):
@@ -78,16 +78,16 @@ class Hand:
             string += 'None '
         else:
             for card in self.cards:
-                string += '{} '.format(card)
+                string += f'{card} '
         
         # Add hand value(s) separates by spaces
         hand_value = ''
         for i, value in enumerate(self.hand_value):
-            hand_value += '{}'.format(value)
+            hand_value += f'{value}'
             if i < len(self.hand_value) - 1:
                 hand_value += ' or '
         # Add the current hand total to string
-        string += '({})'.format(hand_value)
+        string += f'({hand_value})'
             
         return string
 
@@ -123,7 +123,7 @@ class Person:
         self.hand = Hand()
     
     def __str__(self):
-        return 'Hand: {}'.format(self.hand)
+        return f'Hand: {self.hand}'
 
 class Player(Person):
     _ids = count(0)
@@ -142,7 +142,7 @@ class Player(Person):
             self.bank -= bet
     
     def __str__(self):
-        return 'Player {} -> '.format(self.id+1) + super().__str__() + ', Bank: {}'.format(self.bank)
+        return f'Player {self.id + 1} -> ' + super().__str__() + f', Bank: {self.bank}'
 
 class Dealer(Person):
     def __init(self):
@@ -163,7 +163,7 @@ class Blackjack:
         self.people['dealer'] = Dealer()
         # Add each player
         for i in range(self.no_players):
-            self.people['player{}'.format(i)] = Player(player_bank)
+            self.people[f'player{i}'] = Player(player_bank)
     
     def refillDeck(self):
         """Return a refilled deck of cards list."""
@@ -180,7 +180,7 @@ class Blackjack:
         if dealer:
             player = self.people['dealer']
         else:
-            player = self.people['player{}'.format(player_id)]
+            player = self.people[f'player{player_id}']
         
         bust = True
         # Check if there is a possible hand value under 21
@@ -210,12 +210,12 @@ class Blackjack:
             print('Dealer draws', end='')
             player = self.people['dealer']
         else:
-            print('Player {} draws'.format(player_id+1), end='')
-            player = self.people['player{}'.format(player_id)]
+            print(f'Player {player_id + 1} draws', end='')
+            player = self.people[f'player{player_id}']
         
         # If drawing multiple times display multiple
         if times > 1:
-            print(' X{}'.format(times))
+            print(f' X{times}')
         else:
             print()
             
@@ -230,7 +230,7 @@ class Blackjack:
         """Checks whether every player has bust (hand value exceeds 21)."""
         # Look for player who hasn't bust
         for i in range(self.no_players):
-            if self.people['player{}'.format(i)].hand.bust == False:
+            if self.people[f'player{i}'].hand.bust == False:
                 return False
         return True
     
@@ -238,7 +238,7 @@ class Blackjack:
         print('-------------\n')
     
     def collectWinnings(self, player_id=0, draw=False):
-        placed_bet = self.people['player{}'.format(player_id)].hand.bet
+        placed_bet = self.people[f'player{player_id}'].hand.bet
         
         if draw:
             winnings = placed_bet
@@ -246,24 +246,24 @@ class Blackjack:
             winnings = placed_bet * 2
             
         # Add winnings to player bank
-        self.people['player{}'.format(player_id)].bank += winnings
+        self.people[f'player{player_id}'].bank += winnings
     
     def checkWinners(self):
         """Checks each player and prints whether they have won or lost against
            the dealer."""
         # Loop through each player2
         for i in range(self.no_players):
-            player = self.people['player{}'.format(i)]
+            player = self.people[f'player{i}']
             if player.hand.hand_value > self.people['dealer'].hand.hand_value or \
                     (self.people['dealer'].hand.bust and not player.hand.bust):
-                print('** Player {} wins! **'.format(i+1))
+                print(f'** Player {i + 1} wins! **')
                 self.collectWinnings(i)
             elif player.hand.hand_value == self.people['dealer'].hand.hand_value or \
                         player.hand.bust and self.people['dealer'].hand.bust:
                 print('** Draw **')
                 self.collectWinnings(i, draw=True)
             else:
-                print('** Player {} loses **'.format(i+1))
+                print(f'** Player {i + 1} loses **')
             print()
     
     def reset(self):
@@ -275,7 +275,7 @@ class Blackjack:
         quit = False
         game_count = 1
         while not quit:
-            print('-------- Game {} begin --------\n'.format(game_count))
+            print(f'-------- Game {game_count} begin --------\n')
             
             # Dealer init
             self.playerDraws(dealer=True)
@@ -297,7 +297,7 @@ class Blackjack:
                     bet = 0
      
                 # PLace bet for this hand
-                self.people['player{}'.format(i)].placeBet(bet)
+                self.people[f'player{i}'].placeBet(bet)
                 
                 # Players play
                 while True:
@@ -312,12 +312,12 @@ class Blackjack:
                         self.playerDraws(player_id=i)
                         
                         if self.checkBust(player_id=i):
-                            print('** Player {} bust! **\n'.format(i+1))
+                            print(f'** Player {i + 1} bust! **\n')
                             break
                     elif choice.lower() == "stand" or choice.lower() == "s":
                         break
                     else:
-                        print("Please enter an option.")
+                        print('Please enter an option.')
                 if quit:
                     break
             if quit:
@@ -325,7 +325,7 @@ class Blackjack:
             
             # If every player hasn't bust, the dealer begins drawing
             if not self.allBust():
-                print("Dealer\n{}\n".format(self.people['dealer']))
+                print('Dealer\n{}\n'.format(self.people['dealer']))
                 
                 # Dealer draws
                 while self.dealerContinueDraw():
@@ -344,10 +344,10 @@ class Blackjack:
     def __str__(self):
         string = 'GAME STATUS:\n'
         for person in self.people.values():
-            string += '{}\n'.format(person)
+            string += f'{person}\n'
  
         # Print list of cards remaining
-        string += 'Cards remaining: {}'.format(self.cards)
+        string += f'Cards remaining: {self.cards}'
         
         return string
 
