@@ -20,7 +20,7 @@ class Card():
             **dict.fromkeys(['7C', '7D', '7H', '7S'], 7),
             **dict.fromkeys(['8C', '8D', '8H', '8S'], 8),
             **dict.fromkeys(['9C', '9D', '9H', '9S'], 9),
-            **dict.fromkeys(['10C', '10D', '3H', '10S',
+            **dict.fromkeys(['10C', '10D', '10H', '10S',
                              'JC', 'JD', 'JH', 'JS',
                              'KC', 'KD', 'KH', 'KS',
                              'QC', 'QD', 'QH', 'QS'], 10),
@@ -41,6 +41,7 @@ class Hand:
         self.cards = []  # List of card objects
         self.hand_value = (0,)  # Tuple containing possible values of this hand
         self.bust = False
+        self.split = False
     
     def placeBet(self, bet):
         self.bet = bet
