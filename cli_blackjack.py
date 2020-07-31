@@ -46,30 +46,54 @@ class Hand:
     def placeBet(self, bet):
         self.bet = bet
     
-    def add_to_hand_value(self, card):
+    def add_to_hand_value(self, card, side=None):
         """Add the value of the input card to the current hand value."""
         card_value = card.card_value
         
-        new_hand_value = set()  # Collect unique hand values
-        if type(card_value) is tuple:  # If more than one card value (drawn Ace)
-            # Add each card value to each current hand value
-            # E.g. hand value can be 6 or 16 due to holding an Ace
-            #      new card value could be 1 or 10 (an Ace)
-            #      new hand value would be 7, 16, 17 or 26
-            for hand_value in self.hand_value:
-                for value in card_value:
-                    new_hand_value.add(hand_value + value)
+        hand_values = None
+        if self.split and side != None:
+            if side == 'left':
+                hand_values = self.hand_value[0]
+            elif side == 'right':
+                hand_values = self.hand_value[1]
         else:
-            for hand_value in self.hand_value:
-                new_hand_value.add(hand_value + card_value)
+            hand_values = self.hand_value
         
-        self.hand_value = tuple(new_hand_value)  # Save result as tuple
+        if hand_values is not None:
+            new_hand_value = set()  # Collect unique hand values
+            if type(card_value) is tuple:  # If more than one card value (drawn Ace)
+                # Add each card value to each current hand value
+                # E.g. hand value can be 6 or 16 due to holding an Ace
+                #      new card value could be 1 or 10 (an Ace)
+                #      new hand value would be 7, 16, 17 or 26
+                for hand_value in hand_values:
+                    for value in card_value:
+                        new_hand_value.add(hand_value + value)
+            else:
+                for hand_value in hand_values:
+                    new_hand_value.add(hand_value + card_value)
+                    
+            # Save result as tuple
+            if self.split and side != None:
+                if side == 'left':
+                    self.hand_value = tuple(tuple(new_hand_value), self.hand_value[1])
+                elif side == 'right':
+                    self.hand_value = tuple(self.hand_value[0], tuple(new_hand_value))
+            else:
+                self.hand_value = tuple(new_hand_value) 
     
     def calc_hand_value(self):
         """Calculate the value of the entire hand from scratch."""
-        self.hand_value = (0,)
-        for card in self.cards:
-            self.add_to_hand_value(card)
+        if self.split:
+            self.hand_value = ((0,), (0,))
+            for card in self.cards[0]:
+                self.add_to_hand_value(card, side='left')
+            for card in self.cards[1]:
+                self.add_to_hand_value(card, side='right')
+        else:
+            self.hand_value = (0,)
+            for card in self.cards:
+                self.add_to_hand_value(card)
     
     def __str__(self):
         string = ''
@@ -99,6 +123,10 @@ class Person:
     
     def draw(self, available_cards):
         """Draws a random cardand adds it to the hand."""
+        available_cards =  ['10C', '10D', '10H', '10S',
+                             'JC', 'JD', 'JH', 'JS',
+                             'KC', 'KD', 'KH', 'KS',
+                             'QC', 'QD', 'QH', 'QS']
         card_code = random.choice(available_cards)
         card = Card(card_code)
         self.hand.cards.append(card)  # Add card to hand
@@ -176,21 +204,32 @@ class Blackjack:
                 'JC', 'JD', 'JH', 'JS', 'KC', 'KD', 'KH', 'KS', 
                 'QC', 'QD', 'QH', 'QS']
     
-    def checkBust(self, dealer=False, player_id=0):
+    def calculateBust(self, dealer=False, player_id=0):
         """Checks whether a given players hand has bust (hand value exceeded 21)."""
         if dealer:
             player = self.people['dealer']
         else:
             player = self.people[f'player{player_id}']
         
-        bust = True
-        # Check if there is a possible hand value under 21
-        for hand_value in player.hand.hand_value:
-            if hand_value <= 21:
-                bust = False
-        
-        player.hand.bust = bust
-        return bust
+        if player.hand.split:
+            left_bust = True
+            for hand_value in player.hand.hand_value[0]:
+                if hand_value <= 21:
+                    left_bust = False
+            right_bust = True
+            for hand_value in player.hand.hand_value[1]:
+                if hand_value <= 21:
+                    right_bust = False
+            player.hand.bust = tuple((left_bust, right_bust))
+            return left_bust and right_bust  # Bust if both piles bust
+        else:
+            bust = True
+            # Check if there is a possible hand value under 21
+            for hand_value in player.hand.hand_value:
+                if hand_value <= 21:
+                    bust = False
+            player.hand.bust = bust
+            return bust
 
     def dealerContinueDraw(self):
         """Checks if any possible hand values is still under 17.
