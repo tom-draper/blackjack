@@ -46,14 +46,18 @@ class GUIBlackjack(Blackjack):
 
         # Get typical card image size (for displaying cards centrally)
         self.cardSize = self.getCardSize('2D')
-
+        self.card_scale_factor = 0.2
         self.default_game_status = self.GameStatus(round_over=False, draw=None, player_won=None, winnings=0)
-        
+        self.quit = False
+        self.stand = False
+        self.split = False
+
+        # Buttons
         self.buttons = {}  # Dict {name : (x,y)}
         self.action_btns_active = True
         self.bet_btns_active = True
-        self.quit = False
-        self.stand = False
+        self.action_btns = ['Hit', 'Stand']
+        self.bet_btns = ['1', '5', '10', '50', '100']
 
     def getCardSize(self, card):
         image = pygame.image.load(f'resources/{card}.png')
@@ -123,26 +127,20 @@ class GUIBlackjack(Blackjack):
             self.win.blit(image, (int(pos[0] + shift), int(pos[1])))
             shift += (self.cardSize[0]*scale_factor)/2
 
-    def displayButtons(self):
-        # Central buttons
-        btns = ['Hit', 'Stand']
-        
-        # Check if split is an option
-        player_cards = self.people['player0'].hand.cards
-        card_values = [card.card_value for card in player_cards]
-        if all(card_value == player_cards[0].card_value for card_value in card_values):
-            btns.append('Split')  # Add split button
-
-        for i, btn in enumerate(btns):
+    def displayActionButtons(self):
+        for i, btn in enumerate(self.action_btns):
             # Draw a circle
             # Iterate through positions left to right along the middle of the screen
-            # Width = centre - (half the length of all buttons and gaps in between) 
-            #                + (gap between centre of two buttons)*(button number) 
+            # Width = centre - (half the length of all buttons and gaps in between)
+            #                + (gap between centre of two buttons)*(button number)
+            
+            # Draw button active or inactive
             if self.action_btns_active:
                 btn_colour = self.BLACK
             else:
                 btn_colour = self.GREY
-                
+            
+            # Draw circle
             centre_pos = (int(self.WIDTH/2 
                               - ((self.RADIUS*2 + self.BTN_GAP) * (len(btns)-1)/2)
                               + (self.RADIUS*2 + self.BTN_GAP) * i),
@@ -153,13 +151,14 @@ class GUIBlackjack(Blackjack):
             text = self.NORMAL.render(btns[i], 1, btn_colour)
             self.win.blit(text, (int(centre_pos[0] - text.get_width()/2), 
                                  int(centre_pos[1] - text.get_height()/2)))
+            
             # Add buttons centre positions to class dictionary
             self.buttons[btn] = centre_pos
-        
-        # Bet buttons
-        bet_btns = ['1', '5', '10', '50', '100']
+    
+    def displayBetButtons(self):
         btn_colours = [self.BROWN, self.RED, self.BLUE, self.YELLOW, self.BLACK]
-        for i, btn in enumerate(bet_btns):
+        
+        for i, btn in enumerate(self.bet_btns):
             if self.bet_btns_active:
                 btn_colour = btn_colours[i]
                 text_colour = self.BLACK
@@ -167,37 +166,32 @@ class GUIBlackjack(Blackjack):
                 btn_colour = self.GREY
                 text_colour = self.GREY
             
-            # Draw a circle
+            # Draw circle
             btn_range = (self.BTN_GAP*(len(btns)-1))/2 - ((self.RADIUS*len(btns))/2)
             # Iterate through positions top to bottom down the right side of the window
             centre_pos = (int(self.WIDTH - 100),
                           int(self.HEIGHT/2 
-                              - ((self.RADIUS*2 + self.BTN_GAP) * (len(bet_btns)-1)/2)
+                              - ((self.RADIUS*2 + self.BTN_GAP) * (len(btn)-1)/2)
                               + (self.RADIUS*2 + self.BTN_GAP) * i))
             pygame.draw.circle(self.win, btn_colour, centre_pos, self.RADIUS, 3)
+            
             # Draw text in centre of button
-            text = self.NORMAL.render(bet_btns[i], 1, text_colour)
+            text = self.NORMAL.render(btn, 1, text_colour)
             self.win.blit(text, (int(centre_pos[0] - text.get_width()/2), 
                                  int(centre_pos[1] - text.get_height()/2)))
+            
             # Add buttons centre positions to class dictionary
-            self.buttons[bet_btns[i]] = centre_pos
+            self.buttons[btn] = centre_pos
 
-    def display(self, game_status):
-        # ----- Window -----
-        self.win.fill(self.GREEN_BG)
-
-        # ----- Title -----
-        text = self.TITLE.render('Blackjack', 1, self.BLACK)
-        self.win.blit(text, (int(self.WIDTH/2 - text.get_width()/2), 20))
-
-        # ----- Buttons ------
-        self.displayButtons()
-
-        # ----- Dealer -----
-        card_scale_factor = 0.2
+    def displayButtons(self):
+        self.displayActionButtons()
+        self.displayBetButtons()
+    
+    def displayDealer(self):
         # Display cards
         centre_pos = (self.WIDTH/2, 250)
-        self.displayCards(centre_pos, card_scale_factor, dealer=True)
+        self.displayCards(centre_pos, self.card_scale_factor, dealer=True)
+        
         # Display bust
         if self.people['dealer'].hand.bust:
             text = self.HUGE.render('BUST', 1, self.RED)
@@ -207,41 +201,47 @@ class GUIBlackjack(Blackjack):
         hand_value_str = self.buildHandValueString(dealer=True)
         text = self.NORMAL.render(hand_value_str, 1, self.BLACK)
         self.win.blit(text, (int(centre_pos[0] - text.get_width()/2), 
-                             int(centre_pos[1] + (self.cardSize[1]*card_scale_factor)/2 + 20)))
-        
-        # ----- Player ------
+                             int(centre_pos[1] + (self.cardSize[1]*self.card_scale_factor)/2 + 20)))
+    
+    def displayPlayer(self):
         player = self.people['player0']
         
+        # Display cards
         centre_pos = (self.WIDTH/2, 800)
-        self.displayCards(centre_pos, card_scale_factor)
+        self.displayCards(centre_pos, self.card_scale_factor)
+        
         # Display bust
         if player.hand.bust:
             text = self.HUGE.render('BUST', 1, self.RED)
             self.win.blit(text, (centre_pos[0] - text.get_width()/2, centre_pos[1] - text.get_height()/2))
+            
         # Display bank value
         bank_value = player.bank
         text = self.LARGER.render(f'£{bank_value}', 1, self.BLACK)
         self.win.blit(text, (int(100 - text.get_width()/2), 
                              int(self.HEIGHT - 100)))
+        
         # Display winnings added to bank value
-        if game_status.round_over:                            
+        if game_status.round_over:
             if game_status.winnings > 0:
                 winnings_text = self.NORMAL.render(f'+{game_status.winnings}', 1, self.BLACK)
                 self.win.blit(winnings_text, (100 - text.get_width()/2 + 130, 
                                               self.HEIGHT + winnings_text.get_height()/2 - 100))
+                
         # Display hand value
         hand_value_str = self.buildHandValueString()
         text = self.NORMAL.render(hand_value_str, 1, self.BLACK)
         self.win.blit(text, (int(centre_pos[0] - text.get_width()/2), 
-                             int(centre_pos[1] + (self.cardSize[1]*card_scale_factor)/2 + 20)))
+                             int(centre_pos[1] + (self.cardSize[1]*self.card_scale_factor)/2 + 20)))
+        
         # Display bet value
         bet_value = player.hand.bet
         if bet_value != 0:
             text = self.NORMAL.render(f'£{bet_value}', 1, self.BLACK)
             self.win.blit(text, (centre_pos[0] - text.get_width()/2 + 200, 
                                  centre_pos[1]))
-        
-        # Display "you win", "draw" or "you lose"
+    
+    def displayRoundOutcome(self):
         if game_status.round_over:
             centre_pos = (int(self.WIDTH/2), int(self.HEIGHT/2))
             if game_status.draw:
@@ -252,6 +252,20 @@ class GUIBlackjack(Blackjack):
                 text = self.GIGANTIC.render('YOU LOSE', 1, self.RED)
             self.win.blit(text, (int(centre_pos[0] - text.get_width()/2), 
                                  int(centre_pos[1] - text.get_height()/2)))
+        
+    def display(self, game_status):
+        # Window
+        self.win.fill(self.GREEN_BG)
+
+        # Title
+        text = self.TITLE.render('Blackjack', 1, self.BLACK)
+        self.win.blit(text, (int(self.WIDTH/2 - text.get_width()/2), 20))
+
+        self.displayButtons()
+        self.displayDealer()
+        self.displayPlayer()
+        # Display "you win", "draw" or "you lose"
+        self.displayRoundOutcome()
 
         pygame.display.update()  # Update the display
 
@@ -327,6 +341,12 @@ class GUIBlackjack(Blackjack):
             self.setTimer(1000, self.default_game_status)
             self.playerDraws()
             self.display(self.default_game_status)
+            
+            # Check if split is an option
+            player_cards = self.people['player0'].hand.cards
+            card_values = [card.card_value for card in player_cards]
+            if all(card_value == player_cards[0].card_value for card_value in card_values):
+                self.action_btns.append('Split')  # Add split button
             
             # Ensure all buttons active before play
             self.enableAllButtons()
