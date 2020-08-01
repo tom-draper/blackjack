@@ -139,10 +139,9 @@ class GUIBlackjack(Blackjack):
         if not dealer:
             if self.people[f'player{player_id}'].hand.split:
                 # Return hand value for both card piles
-                return strings[0], strings[1]
-            else:
-                # Return hand value for card pile
-                return strings[0]
+                return strings[0], strings[1] 
+        # Return hand value for card pile
+        return strings[0]
 
 
 
@@ -262,11 +261,11 @@ class GUIBlackjack(Blackjack):
         if player.hand.split:
             if player.hand.bust[0]:
                 text = self.HUGE.render('BUST', 1, self.RED)
-                self.win.blit(text, (int(centre_pos[0] - text.get_width()/2 - self.split_gap/2), 
+                self.win.blit(text, (int(centre_pos[0] - text.get_width()/2 - self.split_gap), 
                                     int(centre_pos[1] - text.get_height()/2)))
             if player.hand.bust[1]:
                 text = self.HUGE.render('BUST', 1, self.RED)
-                self.win.blit(text, (int(centre_pos[0] - text.get_width()/2 + self.split_gap/2), 
+                self.win.blit(text, (int(centre_pos[0] - text.get_width()/2 + self.split_gap), 
                                     int(centre_pos[1] - text.get_height()/2)))
         else:
             if player.hand.bust:
@@ -338,7 +337,6 @@ class GUIBlackjack(Blackjack):
         pygame.display.update()  # Update the display
 
 
-
     def canSplit(self):
         if len(self.player.hand.cards) == 2:
             player_cards = self.player.hand.cards
@@ -357,6 +355,7 @@ class GUIBlackjack(Blackjack):
         self.player.hand.hand_value = (tuple((hand_value1,)), tuple((hand_value2,)))
         # Modify bust to indicate split
         self.player.hand.bust = tuple((False, False))
+        self.current_side = 'left'
 
     def handleEvents(self):
         handled = False
@@ -370,14 +369,19 @@ class GUIBlackjack(Blackjack):
                     d = math.sqrt((pos[0] - m_x)**2 + (pos[1] - m_y)**2)
                     if d < self.RADIUS:  # If click inside this button
                         if btn == 'Hit' and self.action_btns_active:
-                            self.playerDraws()
+                            self.playerDraws(side=self.current_side)
                             # Player no longer able to bet
                             self.bet_btns_active = False
                         elif btn == 'Stand' and self.action_btns_active:
-                            self.stand = True
-                            # Turn off all buttons while dealer plays
+                            # If already split and now played stand on left card pile
+                            if self.player.hand.split and self.current_side == 'left':
+                                # Move to right card pile
+                                self.current_side = 'right'
+                            else:
+                                self.stand = True
+                                # Turn off all buttons while dealer plays
+                                self.action_btns_active = False
                             self.bet_btns_active = False
-                            self.action_btns_active = False
                         elif btn == 'Split' and self.action_btns_active:
                             self.split()
                             self.action_btns.remove('Split')
@@ -477,7 +481,7 @@ class GUIBlackjack(Blackjack):
             while (not self.stand and not self.playerBust(self.player.hand.bust)) and not self.quit:
                 self.handleEvents()  # Update stand (if stand action selected)
                 self.display()
-                if self.calculateBust():  # Update players hand bust status
+                if self.calcBust():  # Update players hand bust status
                     self.action_btns_active = False  # Grey out action buttons if bust
                     self.setTimer(1000)
             
@@ -497,7 +501,7 @@ class GUIBlackjack(Blackjack):
                     self.handleEvents()
                 
                 # Update dealer bust status
-                self.checkBust(dealer=True)
+                self.calculateBust(dealer=True)
                 self.setTimer(2000)  # Pause to view the result
             
             if not self.quit:

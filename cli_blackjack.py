@@ -76,9 +76,9 @@ class Hand:
             # Save result as tuple
             if self.split and side != None:
                 if side == 'left':
-                    self.hand_value = tuple(tuple(new_hand_value), self.hand_value[1])
+                    self.hand_value = tuple((tuple(new_hand_value), self.hand_value[1]))
                 elif side == 'right':
-                    self.hand_value = tuple(self.hand_value[0], tuple(new_hand_value))
+                    self.hand_value = tuple((self.hand_value[0], tuple(new_hand_value)))
             else:
                 self.hand_value = tuple(new_hand_value) 
     
@@ -121,7 +121,7 @@ class Person:
     def __init__(self):
         self.hand = Hand()
     
-    def draw(self, available_cards):
+    def draw(self, available_cards, side=None):
         """Draws a random cardand adds it to the hand."""
         available_cards =  ['10C', '10D', '10H', '10S',
                              'JC', 'JD', 'JH', 'JS',
@@ -130,23 +130,70 @@ class Person:
         card_code = random.choice(available_cards)
         card = Card(card_code)
         self.hand.cards.append(card)  # Add card to hand
-        self.hand.add_to_hand_value(card)  # Update hand total
+        self.hand.add_to_hand_value(card, side)  # Update hand total
         self.tidyHandValue()
     
     def tidyHandValue(self):
         """Remove any excess hand values over 21."""
         # Remove any bust hand values if more than one hand value option exists
-        if len(self.hand.hand_value) > 1:
+        
+        # if self.hand.split:
+        #     hand_values = self.hand.hand_value
+        # else:
+        #     hand_values = [self.hand.hand_value]
+
+        # pile_hand_values = []
+        # for hand_value in hand_values:
+        #     if len(hand_value) > 1:  # If only one value, keep it even if bust
+        #         new_hand_value = []
+        #         for value in hand_value:
+        #             if value == 21:
+        #                 new_hand_value = [21]  # Overwrite hand value, only keep 21
+        #                 break
+        #             elif value <= 21:  # Potential hand value if under 21
+        #                 new_hand_value.append(value)
+                        
+        #         # Update player's hand value
+        #         pile_hand_values.append(tuple(new_hand_value))
+        #     else:
+        #         # Keep old hand value
+        #         pile_hand_values.append(hand_value)
+            
+        # self.hand.hand_value = tuple(pile_hand_values)
+        # print(self.hand.hand_value)
+        if self.hand.split:
             new_hand_value = []
-            for hand_value in self.hand.hand_value:
-                if hand_value == 21:
-                    new_hand_value = [21]  # Overwrite hand value, only keep 21
-                    break
-                elif hand_value <= 21:
-                    new_hand_value.append(hand_value)
-                    
-            # Update player's hand value
-            self.hand.hand_value = tuple(new_hand_value)
+            if len(self.hand.hand_value[0]) > 1:
+                for hand_value in self.hand.hand_value[0]:
+                    if hand_value == 21:
+                        new_hand_value = [21]  # Overwrite hand value, only keep 21
+                        break
+                    elif hand_value <= 21:
+                        new_hand_value.append(hand_value)
+            
+            if len(self.hand.hand_value[1]) > 1:
+                for hand_value in self.hand.hand_value[1]:
+                    if hand_value == 21:
+                        new_hand_value = [21]  # Overwrite hand value, only keep 21
+                        break
+                    elif hand_value <= 21:
+                        new_hand_value.append(hand_value)
+
+            if len(self.hand.hand_value[0]) > 1 or len(self.hand.hand_value[1]) > 1:
+                # Update player's hand value
+                self.hand.hand_value = tuple(new_hand_value)
+        else:
+            if len(self.hand.hand_value) > 1:
+                new_hand_value = []
+                for hand_value in self.hand.hand_value:
+                    if hand_value == 21:
+                        new_hand_value = [21]  # Overwrite hand value, only keep 21
+                        break
+                    elif hand_value <= 21:
+                        new_hand_value.append(hand_value)
+                        
+                # Update player's hand value
+                self.hand.hand_value = tuple(new_hand_value)
     
     def reset(self):
         self.hand = Hand()
@@ -193,6 +240,9 @@ class Blackjack:
         # Add each player
         for i in range(self.no_players):
             self.people[f'player{i}'] = Player(player_bank)
+            
+        self.current_side = None  # If split, hit on left pile then right
+
     
     def refillDeck(self):
         """Return a refilled deck of cards list."""
@@ -204,32 +254,39 @@ class Blackjack:
                 'JC', 'JD', 'JH', 'JS', 'KC', 'KD', 'KH', 'KS', 
                 'QC', 'QD', 'QH', 'QS']
     
-    def calculateBust(self, dealer=False, player_id=0):
+    def calcBust(self, dealer=False, player_id=0):
         """Checks whether a given players hand has bust (hand value exceeded 21)."""
         if dealer:
             player = self.people['dealer']
         else:
             player = self.people[f'player{player_id}']
-        
-        if player.hand.split:
-            left_bust = True
-            for hand_value in player.hand.hand_value[0]:
-                if hand_value <= 21:
-                    left_bust = False
-            right_bust = True
-            for hand_value in player.hand.hand_value[1]:
-                if hand_value <= 21:
-                    right_bust = False
-            player.hand.bust = tuple((left_bust, right_bust))
-            return left_bust and right_bust  # Bust if both piles bust
-        else:
-            bust = True
-            # Check if there is a possible hand value under 21
-            for hand_value in player.hand.hand_value:
-                if hand_value <= 21:
-                    bust = False
-            player.hand.bust = bust
-            return bust
+            
+            if player.hand.split:
+                # For checking if left pile has JUST bust and need to move to right pile
+                original = player.hand.bust
+                left_bust = True
+                for hand_value in player.hand.hand_value[0]:
+                    if hand_value <= 21:
+                        left_bust = False
+                # If calc bust has already been run after split selected and bust has been converted to tuple 
+                if type(original) is tuple:
+                    # Check if left pile has JUST gone bust
+                    if original[0] == False and left_bust:
+                        self.current_side = 'right'  # Move to right pile
+                right_bust = True
+                for hand_value in player.hand.hand_value[1]:
+                    if hand_value <= 21:
+                        right_bust = False
+                player.hand.bust = tuple((left_bust, right_bust))
+                return left_bust and right_bust  # Bust if both piles bust
+            
+        bust = True
+        # Check if there is a possible hand value under 21
+        for hand_value in player.hand.hand_value:
+            if hand_value <= 21:
+                bust = False
+        player.hand.bust = bust
+        return bust
 
     def dealerContinueDraw(self):
         """Checks if any possible hand values is still under 17.
@@ -244,7 +301,7 @@ class Blackjack:
         
         return False
     
-    def playerDraws(self, dealer=False, player_id=0, times=1):
+    def playerDraws(self, dealer=False, player_id=0, side=None, times=1):
         """Player draws input number of times."""
         if dealer:
             print('Dealer draws', end='')
@@ -262,7 +319,7 @@ class Blackjack:
         for _ in range(times):
             if len(self.cards) == 0:
                 self.refillDeck()
-            player.draw(self.cards)
+            player.draw(self.cards, side)
         
         print(player, '\n')  # Display plaeyr hand status
     
