@@ -143,10 +143,12 @@ class Person:
     
     def draw(self, available_cards, side=None):
         """Draws a random cardand adds it to the hand."""
+        # TESTING
         available_cards =  ['10C', '10D', '10H', '10S',
                              'JC', 'JD', 'JH', 'JS',
                              'KC', 'KD', 'KH', 'KS',
                              'QC', 'QD', 'QH', 'QS']
+        # TESTING
         card_code = random.choice(available_cards)
         card = Card(card_code)
         self.hand.cards.append(card)  # Add card to hand
@@ -311,7 +313,7 @@ class Blackjack:
     def dealerContinueDraw(self):
         """Checks if any possible hand values is still under 17.
            Determines whether the dealer should continue to draw"""
-        if self.checkBust(dealer=True):
+        if self.calcBust(dealer=True):
             return False
         
         # Check if any possible hand values are under 17

@@ -368,6 +368,11 @@ class GUIBlackjack(Blackjack):
                 for btn, pos in self.buttons.items():
                     d = math.sqrt((pos[0] - m_x)**2 + (pos[1] - m_y)**2)
                     if d < self.RADIUS:  # If click inside this button
+                        # No longer possible to split after first action taken
+                        if btn in self.action_btns and self.action_btns_active:
+                            if 'Split' in self.action_btns:
+                                self.action_btns.remove('Split')
+                                
                         if btn == 'Hit' and self.action_btns_active:
                             self.playerDraws(side=self.current_side)
                             # Player no longer able to bet
@@ -384,7 +389,6 @@ class GUIBlackjack(Blackjack):
                             self.bet_btns_active = False
                         elif btn == 'Split' and self.action_btns_active:
                             self.split()
-                            self.action_btns.remove('Split')
                         elif btn.isdigit() and self.bet_btns_active:
                             self.player.placeBet(int(btn))
                 handled = True
@@ -501,7 +505,7 @@ class GUIBlackjack(Blackjack):
                     self.handleEvents()
                 
                 # Update dealer bust status
-                self.calculateBust(dealer=True)
+                self.calcBust(dealer=True)
                 self.setTimer(2000)  # Pause to view the result
             
             if not self.quit:
