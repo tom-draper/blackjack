@@ -102,7 +102,15 @@ class GUIBlackjack(Blackjack):
            3 cards -> width = 2 cards wide.
         """
         return ((no_cards+1)/2) * ((self.card_size[0]))
-
+    
+    def playerBust(self, bust):
+        if type(bust) is tuple:
+            if bust[0] == True and bust[1] == True:
+                return True
+            else:
+                return False
+        return bust
+            
     def buildHandValueString(self, dealer=False, player_id=0):
         no_hands = 1  # Assume single pile of cards (no split)
         if dealer:
@@ -466,7 +474,7 @@ class GUIBlackjack(Blackjack):
             
             # Handle actions until player stands, busts or quits
             self.stand = False
-            while (not self.stand and not self.player.hand.bust) and not self.quit:
+            while (not self.stand and not self.playerBust(self.player.hand.bust)) and not self.quit:
                 self.handleEvents()  # Update stand (if stand action selected)
                 self.display()
                 if self.calculateBust():  # Update players hand bust status
