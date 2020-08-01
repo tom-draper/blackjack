@@ -98,21 +98,41 @@ class Hand:
     def __str__(self):
         string = ''
         
-        # Add each card in hand to string
-        if len(self.cards) == 0:
-            string += 'None '
+        if self.split:
+            for i in range(2):
+                # Add each card in hand to string
+                if len(self.cards[i]) == 0:
+                    string += 'None '
+                else:
+                    for card in self.cards[i]:
+                        string += f'{card} '
+                
+                # Add hand value(s) separates by spaces
+                hand_value = ''
+                for idx, value in enumerate(self.hand_value[i]):
+                    hand_value += f'{value}'
+                    if idx < len(self.hand_value[i]) - 1:
+                        hand_value += ' or '
+                # Add the current hand total to string
+                string += f'({hand_value})'
+                if i == 0:
+                    string += ' -//- '
         else:
-            for card in self.cards:
-                string += f'{card} '
-        
-        # Add hand value(s) separates by spaces
-        hand_value = ''
-        for i, value in enumerate(self.hand_value):
-            hand_value += f'{value}'
-            if i < len(self.hand_value) - 1:
-                hand_value += ' or '
-        # Add the current hand total to string
-        string += f'({hand_value})'
+            # Add each card in hand to string
+            if len(self.cards) == 0:
+                string += 'None '
+            else:
+                for card in self.cards:
+                    string += f'{card} '
+            
+            # Add hand value(s) separates by spaces
+            hand_value = ''
+            for i, value in enumerate(self.hand_value):
+                hand_value += f'{value}'
+                if i < len(self.hand_value) - 1:
+                    hand_value += ' or '
+            # Add the current hand total to string
+            string += f'({hand_value})'
             
         return string
 
