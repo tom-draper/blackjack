@@ -373,7 +373,7 @@ class GUIBlackjack(Blackjack):
                             if 'Split' in self.action_btns:
                                 self.action_btns.remove('Split')
                         if btn == 'Hit' and self.action_btns_active:
-                            self.playerDraws(side=self.current_side)
+                            self.personDraws(side=self.current_side)
                             # Player no longer able to bet
                             self.bet_btns_active = False
                             break  # No other button needs to be checked
@@ -466,14 +466,14 @@ class GUIBlackjack(Blackjack):
             self.display()
             
             # Dealer init
-            self.playerDraws(dealer=True)
+            self.personDraws(dealer=True)
             self.display()
             self.setTimer(1000)
             
             # Players init
-            self.playerDraws()
+            self.personDraws()
             self.setTimer(1000)
-            self.playerDraws()
+            self.personDraws()
             # Check if split is an option
             if self.canSplit():
                 self.action_btns.append('Split')  # Add split button
@@ -501,7 +501,7 @@ class GUIBlackjack(Blackjack):
                 while self.dealerContinueDraw():
                     now = pygame.time.get_ticks()
                     if now - last >= wait_before_draw:
-                        self.playerDraws(dealer=True)
+                        self.personDraws(dealer=True)
                         self.display()
                         last = now
                     self.handleEvents()

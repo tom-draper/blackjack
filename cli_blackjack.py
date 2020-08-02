@@ -1,4 +1,4 @@
-import random
+import numpy as np
 import time
 from itertools import count
 
@@ -144,12 +144,13 @@ class Person:
     def draw(self, available_cards, side=None):
         """Draws a random cardand adds it to the hand."""
         # vvv TESTING
-        available_cards =  ['10C', '10D', '10H', '10S',
-                             'JC', 'JD', 'JH', 'JS',
-                             'KC', 'KD', 'KH', 'KS',
-                             'QC', 'QD', 'QH', 'QS']
+        #available_cards =  ['10C', '10D', '10H', '10S',
+        #                     'JC', 'JD', 'JH', 'JS',
+        #                     'KC', 'KD', 'KH', 'KS',
+        #                     'QC', 'QD', 'QH', 'QS']
         # ^^^ TESTING
-        card_code = random.choice(available_cards)
+        card_code = np.random.choice(available_cards)
+        available_cards.remove(card_code)
         card = Card(card_code)
         
         if self.hand.split:
@@ -164,6 +165,8 @@ class Person:
             
         self.hand.add_to_hand_value(card, side)  # Update hand total
         self.tidyHandValue()
+        
+        return card
     
     def tidyHandValue(self):
         """Remove any excess hand values over 21."""
@@ -282,7 +285,7 @@ class Blackjack:
                 '4C', '4D', '4H', '4S', '5C', '5D', '5H', '5S',
                 '6C', '6D', '6H', '6S', '7C', '7D', '7H', '7S',
                 '8C', '8D', '8H', '8S', '9C', '9D', '9H', '9S',
-                '10C', '10D', '3H', '10S', 'AC', 'AD', 'AH', 'AS',
+                '10C', '10D', '10H', '10S', 'AC', 'AD', 'AH', 'AS',
                 'JC', 'JD', 'JH', 'JS', 'KC', 'KD', 'KH', 'KS', 
                 'QC', 'QD', 'QH', 'QS']
     
@@ -333,7 +336,7 @@ class Blackjack:
         
         return False
     
-    def playerDraws(self, dealer=False, player_id=0, side=None, times=1):
+    def personDraws(self, dealer=False, player_id=0, side=None, times=1):
         """Player draws input number of times."""
         if dealer:
             print('Dealer draws', end='')
@@ -407,13 +410,13 @@ class Blackjack:
             print(f'-------- Game {game_count} begin --------\n')
             
             # Dealer init
-            self.playerDraws(dealer=True)
+            self.personDraws(dealer=True)
             
             for i in range(self.no_players):
                 self.divider()  # Print a divider
                 
                 # Players init
-                self.playerDraws(player_id=i, times=2)
+                self.personDraws(player_id=i, times=2)
                 
                 # Place bet for this hand
                 bet = input('> Enter bet: ')
@@ -438,7 +441,7 @@ class Blackjack:
                         break
                     
                     if choice.lower() == 'hit' or choice.lower() == 'h':  # Draw
-                        self.playerDraws(player_id=i)
+                        self.personDraws(player_id=i)
                         
                         if self.checkBust(player_id=i):
                             print(f'** Player {i + 1} bust! **\n')
@@ -459,7 +462,7 @@ class Blackjack:
                 # Dealer draws
                 while self.dealerContinueDraw():
                     time.sleep(1.5)
-                    self.playerDraws(dealer=True)
+                    self.personDraws(dealer=True)
                 
                 if self.bust(dealer=True):
                     print('** Dealer bust! **')
