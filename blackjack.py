@@ -3,7 +3,7 @@ import math
 from collections import namedtuple
 from cli_blackjack import Blackjack
 
-pygame.init()  # Initialise pygame
+pygame.init()
 
 
 class GUIBlackjack(Blackjack):
@@ -65,6 +65,9 @@ class GUIBlackjack(Blackjack):
         # Gap between card piles when split
         self.split_gap = self.card_size[0]
 
+
+    # ---------- GAME TOOLS -------------
+
     def getCardSize(self, card):
         image = pygame.image.load(f'resources/{card}.png')
         # Return the actual card image dimensions multipled by the scale factor 
@@ -93,6 +96,9 @@ class GUIBlackjack(Blackjack):
         self.action_btns_active = False
         self.bet_btns_active = False
 
+
+    # ----------DISPLAY FUNCTIONS--------------
+
     def cardPileWidth(self, no_cards, scale_factor):
         """Get width of a given number of cards when spread in a pile.
            Each subsequent card lies half overlapping the previous card.
@@ -103,48 +109,6 @@ class GUIBlackjack(Blackjack):
         """
         return ((no_cards+1)/2) * ((self.card_size[0]))
     
-    def playerBust(self, bust):
-        if type(bust) is tuple:
-            if bust[0] == True and bust[1] == True:
-                return True
-            else:
-                return False
-        return bust
-            
-    def buildHandValueString(self, dealer=False, player_id=0):
-        no_hands = 1  # Assume single pile of cards (no split)
-        if dealer:
-            hand_value = self.people['dealer'].hand.hand_value
-        else:
-            hand_value = self.people[f'player{player_id}'].hand.hand_value
-            if self.people[f'player{player_id}'].hand.split:
-                no_hands = 2
-        
-        if no_hands == 1:
-            # Add single hand value to list for generalised loop below
-            hand_value = [hand_value]
-        
-        # Build hand value strings
-        strings = []
-        for i in range(no_hands):
-            string = ''
-            for idx, value in enumerate(hand_value[i]):
-                string += str(value)
-                if idx >= len(hand_value[i]) - 1:
-                    string += ' '
-                else:
-                    string += ' or '
-            strings.append(string)
-        
-        if not dealer:
-            if self.people[f'player{player_id}'].hand.split:
-                # Return hand value for both card piles
-                return strings[0], strings[1] 
-        # Return hand value for card pile
-        return strings[0]
-
-
-
     def displayActionButtons(self):
         for i, btn in enumerate(self.action_btns):
             # Draw a circle
@@ -232,6 +196,38 @@ class GUIBlackjack(Blackjack):
                 self.displayCardPile(cards[1], right_centre_pos)
             else:  # Normal hand
                 self.displayCardPile(cards, centre_pos)
+    
+    def buildHandValueString(self, dealer=False, player_id=0):
+        no_hands = 1  # Assume single pile of cards (no split)
+        if dealer:
+            hand_value = self.people['dealer'].hand.hand_value
+        else:
+            hand_value = self.people[f'player{player_id}'].hand.hand_value
+            if self.people[f'player{player_id}'].hand.split:
+                no_hands = 2
+        
+        if no_hands == 1:
+            # Add single hand value to list for generalised loop below
+            hand_value = [hand_value]
+        
+        # Build hand value strings
+        strings = []
+        for i in range(no_hands):
+            string = ''
+            for idx, value in enumerate(hand_value[i]):
+                string += str(value)
+                if idx >= len(hand_value[i]) - 1:
+                    string += ' '
+                else:
+                    string += ' or '
+            strings.append(string)
+        
+        if not dealer:
+            if self.people[f'player{player_id}'].hand.split:
+                # Return hand value for both card piles
+                return strings[0], strings[1] 
+        # Return hand value for card pile
+        return strings[0]
     
     def displayDealer(self):
         # Display cards
@@ -337,6 +333,8 @@ class GUIBlackjack(Blackjack):
         pygame.display.update()  # Update the display
 
 
+    # ------------ GAME FUNCITONS -----------------
+
     def canSplit(self):
         if len(self.player.hand.cards) == 2:
             player_cards = self.player.hand.cards
@@ -357,45 +355,13 @@ class GUIBlackjack(Blackjack):
         self.player.hand.bust = tuple((False, False))
         self.current_side = 'left'
 
-    def handleEvents(self):
-        handled = False
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:  # Window close button pressed
-                self.quit = True
-                handled = True
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                m_x, m_y = pygame.mouse.get_pos()  # x,y pos of mouse
-                for btn, pos in self.buttons.items():
-                    d = math.sqrt((pos[0] - m_x)**2 + (pos[1] - m_y)**2)
-                    if d < self.RADIUS:  # If click inside this button
-                        # No longer possible to split after first action taken
-                        if btn in self.action_btns and self.action_btns_active:
-                            if 'Split' in self.action_btns:
-                                self.action_btns.remove('Split')
-                        if btn == 'Hit' and self.action_btns_active:
-                            self.personDraws(side=self.current_side)
-                            # Player no longer able to bet
-                            self.bet_btns_active = False
-                            break  # No other button needs to be checked
-                        elif btn == 'Stand' and self.action_btns_active:
-                            # If already split and now played stand on left card pile
-                            if self.player.hand.split and self.current_side == 'left':
-                                # Move to right card pile
-                                self.current_side = 'right'
-                            else:
-                                self.stand = True
-                                # Turn off all buttons while dealer plays
-                                self.action_btns_active = False
-                            self.bet_btns_active = False
-                            break
-                        elif btn == 'Split' and self.action_btns_active:
-                            self.split()
-                            break
-                        elif btn.isdigit() and self.bet_btns_active:
-                            self.player.placeBet(int(btn))
-                            break
-                handled = True
-        return handled
+    def playerBust(self, bust):
+        if type(bust) is tuple:
+            if bust[0] == True and bust[1] == True:
+                return True
+            else:
+                return False
+        return bust
     
     def checkWinners(self):
         """Checks each player and prints whether they have won or lost against
@@ -448,6 +414,46 @@ class GUIBlackjack(Blackjack):
             else:
                 # Player lose
                 self.game_status = self.GameStatus(round_over=True, draw=False, player_won=False, winnings=0)
+
+    def handleEvents(self):
+        handled = False
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:  # Window close button pressed
+                self.quit = True
+                handled = True
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                m_x, m_y = pygame.mouse.get_pos()  # x,y pos of mouse
+                for btn, pos in self.buttons.items():
+                    d = math.sqrt((pos[0] - m_x)**2 + (pos[1] - m_y)**2)
+                    if d < self.RADIUS:  # If click inside this button
+                        # No longer possible to split after first action taken
+                        if btn in self.action_btns and self.action_btns_active:
+                            if 'Split' in self.action_btns:
+                                self.action_btns.remove('Split')
+                        if btn == 'Hit' and self.action_btns_active:
+                            self.personDraws(side=self.current_side)
+                            # Player no longer able to bet
+                            self.bet_btns_active = False
+                            break  # No other button needs to be checked
+                        elif btn == 'Stand' and self.action_btns_active:
+                            # If already split and now played stand on left card pile
+                            if self.player.hand.split and self.current_side == 'left':
+                                # Move to right card pile
+                                self.current_side = 'right'
+                            else:
+                                self.stand = True
+                                # Turn off all buttons while dealer plays
+                                self.action_btns_active = False
+                            self.bet_btns_active = False
+                            break
+                        elif btn == 'Split' and self.action_btns_active:
+                            self.split()
+                            break
+                        elif btn.isdigit() and self.bet_btns_active:
+                            self.player.placeBet(int(btn))
+                            break
+                handled = True
+        return handled
 
     def main(self):
         """One player GUI Blackjack game.
@@ -520,6 +526,8 @@ class GUIBlackjack(Blackjack):
                 self.action_btns_active = True
                 self.bet_btns_active = True
                 game_count += 1
+
+
 
 if __name__ == "__main__":
     game = GUIBlackjack()
