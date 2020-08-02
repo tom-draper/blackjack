@@ -363,7 +363,7 @@ class GUIBlackjack(Blackjack):
             if event.type == pygame.QUIT:  # Window close button pressed
                 self.quit = True
                 handled = True
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            elif event.type == pygame.MOUSEBUTTONDOWN:
                 m_x, m_y = pygame.mouse.get_pos()  # x,y pos of mouse
                 for btn, pos in self.buttons.items():
                     d = math.sqrt((pos[0] - m_x)**2 + (pos[1] - m_y)**2)
@@ -372,11 +372,11 @@ class GUIBlackjack(Blackjack):
                         if btn in self.action_btns and self.action_btns_active:
                             if 'Split' in self.action_btns:
                                 self.action_btns.remove('Split')
-                                
                         if btn == 'Hit' and self.action_btns_active:
                             self.playerDraws(side=self.current_side)
                             # Player no longer able to bet
                             self.bet_btns_active = False
+                            break  # No other button needs to be checked
                         elif btn == 'Stand' and self.action_btns_active:
                             # If already split and now played stand on left card pile
                             if self.player.hand.split and self.current_side == 'left':
@@ -387,12 +387,14 @@ class GUIBlackjack(Blackjack):
                                 # Turn off all buttons while dealer plays
                                 self.action_btns_active = False
                             self.bet_btns_active = False
+                            break
                         elif btn == 'Split' and self.action_btns_active:
                             self.split()
+                            break
                         elif btn.isdigit() and self.bet_btns_active:
                             self.player.placeBet(int(btn))
+                            break
                 handled = True
-
         return handled
     
     def checkWinners(self):

@@ -143,15 +143,25 @@ class Person:
     
     def draw(self, available_cards, side=None):
         """Draws a random cardand adds it to the hand."""
-        # TESTING
+        # vvv TESTING
         available_cards =  ['10C', '10D', '10H', '10S',
                              'JC', 'JD', 'JH', 'JS',
                              'KC', 'KD', 'KH', 'KS',
                              'QC', 'QD', 'QH', 'QS']
-        # TESTING
+        # ^^^ TESTING
         card_code = random.choice(available_cards)
         card = Card(card_code)
-        self.hand.cards.append(card)  # Add card to hand
+        
+        if self.hand.split:
+            if side == 'left':
+                self.hand.cards[0].append(card)
+            elif side == 'right':
+                self.hand.cards[1].append(card)
+            else:
+                raise ValueError('If hand has been split, provide a side to draw to.')
+        else:
+            self.hand.cards.append(card)  # Add card to hand
+            
         self.hand.add_to_hand_value(card, side)  # Update hand total
         self.tidyHandValue()
     
