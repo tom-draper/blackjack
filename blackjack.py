@@ -402,13 +402,13 @@ class GUIBlackjack(Blackjack):
             if (self.player.hand.hand_value > self.people['dealer'].hand.hand_value or \
                         self.people['dealer'].hand.bust) and not self.player.hand.bust:
                 # Player win
-                winnings = player.hand.bet*2
+                winnings = self.player.hand.bet*2
                 self.game_status = self.GameStatus(round_over=True, draw=False, player_won=True, winnings=winnings)
                 self.collectWinnings(player_id=0)
             elif self.player.hand.hand_value == self.people['dealer'].hand.hand_value or \
                         self.player.hand.bust and self.people['dealer'].hand.bust:
                 # Draw
-                winnings = player.hand.bet
+                winnings = self.player.hand.bet
                 self.game_status = self.GameStatus(round_over=True, draw=True, player_won=None, winnings=winnings)
                 self.collectWinnings(player_id=0, draw=True)
             else:
