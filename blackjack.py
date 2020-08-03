@@ -62,7 +62,7 @@ class GUIBlackjack(Blackjack):
         self.action_btns = ['Hit', 'Stand']
         self.bet_btns = ['1', '5', '10', '50', '100']
         
-        # Gap between card piles when split
+        # Gap between displayed card hands when player has chosen split
         self.split_gap = self.card_size[0]
 
 
@@ -107,7 +107,7 @@ class GUIBlackjack(Blackjack):
            2 cards -> width 1.5 cards wide
            3 cards -> width = 2 cards wide.
         """
-        return ((no_cards+1)/2) * ((self.card_size[0]))
+        return ((no_cards + 1)/2) * ((self.card_size[0]))
     
     def displayActionButtons(self):
         for i, btn in enumerate(self.action_btns):
@@ -206,8 +206,8 @@ class GUIBlackjack(Blackjack):
             if self.people[f'player{player_id}'].hand.split:
                 no_hands = 2
         
+        # Add single hand value to list for generalised loop below
         if no_hands == 1:
-            # Add single hand value to list for generalised loop below
             hand_value = [hand_value]
         
         # Build hand value strings
@@ -222,11 +222,10 @@ class GUIBlackjack(Blackjack):
                     string += ' or '
             strings.append(string)
         
-        if not dealer:
-            if self.people[f'player{player_id}'].hand.split:
-                # Return hand value for both card piles
-                return strings[0], strings[1] 
-        # Return hand value for card pile
+        # If split, return hand value for both hands
+        if not dealer and self.people[f'player{player_id}'].hand.split:
+            return strings[0], strings[1] 
+        # Return hand value for a single card
         return strings[0]
     
     def displayDealer(self):
@@ -255,14 +254,14 @@ class GUIBlackjack(Blackjack):
         # TODO: REVIEW
         # Display bust
         if player.hand.split:
-            if player.hand.bust[0]:
-                text = self.HUGE.render('BUST', 1, self.RED)
-                self.win.blit(text, (int(centre_pos[0] - text.get_width()/2 - self.split_gap), 
-                                    int(centre_pos[1] - text.get_height()/2)))
-            if player.hand.bust[1]:
-                text = self.HUGE.render('BUST', 1, self.RED)
-                self.win.blit(text, (int(centre_pos[0] - text.get_width()/2 + self.split_gap), 
-                                    int(centre_pos[1] - text.get_height()/2)))
+            # Left hand shifted to left by split gap, right hand shifted to right by split gap
+            x_pos_change = [-self.split_gap, self.split_gap]
+            # Check left hand then right hand
+            for i in range(2):
+                if player.hand.bust[i]:
+                    text = self.HUGE.render('BUST', 1, self.RED)
+                    self.win.blit(text, (int(centre_pos[0] - text.get_width()/2 + x_pos_change[i]), 
+                                        int(centre_pos[1] - text.get_height()/2)))
         else:
             if player.hand.bust:
                 text = self.HUGE.render('BUST', 1, self.RED)
@@ -305,7 +304,7 @@ class GUIBlackjack(Blackjack):
                                  int(centre_pos[1])))
     
     def displayRoundOutcome(self):
-        """Using the game status modified by the checkWinners function, display whether """
+        """Using the game status modified by the recordWinners function, display whether """
         if self.game_status.round_over:
             centre_pos = (int(self.WIDTH/2), int(self.HEIGHT/2))
             if self.game_status.draw:
@@ -336,7 +335,7 @@ class GUIBlackjack(Blackjack):
 
     # ------------ GAME FUNCITONS -----------------
     
-    def checkWinners(self):
+    def recordWinners(self):
         """Checks player result and alters the game status to indicate their
            win, loss or draw during the next execution of the display function."""
         
@@ -344,11 +343,11 @@ class GUIBlackjack(Blackjack):
         if self.player.hand.split:
             results = []
             winnings = 0
-            # Get result for both pile of cards
+            # Get result for both hand
             for i in range(2):
-                # Check left pile for win
+                # Check left hand for win
                 if (self.player.hand.hand_value[i] > self.people['dealer'].hand.hand_value or \
-                            self.people['dealer'].hand.bust) and not self.player.hand.bust[0]:
+                            self.people['dealer'].hand.bust) and not self.player.hand.bust[i]:
                     # Record win
                     results.append('win')
                     winnings += self.player.hand.bet*2
@@ -362,7 +361,8 @@ class GUIBlackjack(Blackjack):
                     results.append('lose')
                 
             # Calculate overall results and set game status for end screen
-            if results[0] == 'win' or results[1] == 'win':  # One pile wins
+            # Based on combination of results for both hands
+            if results[0] == 'win' or results[1] == 'win':  # One hand wins
                 self.game_status = self.GameStatus(round_over=True, draw=False, player_won=True, winnings=winnings)
                 self.collectWinnings(player_id=0)  
             elif results[0] == 'draw' or results[1] == 'draw':  # If two draws, or one draw and a loss 
@@ -409,9 +409,9 @@ class GUIBlackjack(Blackjack):
                             self.bet_btns_active = False
                             break  # No other button needs to be checked
                         elif btn == 'Stand' and self.action_btns_active:
-                            # If already split and now played stand on left card pile
+                            # If already split and now played stand on left hand
                             if self.player.hand.split and self.current_side == 'left':
-                                # Move to right card pile
+                                # Future actions now affect right hand
                                 self.current_side = 'right'
                             else:
                                 self.stand = True
@@ -492,7 +492,7 @@ class GUIBlackjack(Blackjack):
             
             if not self.quit:
                 # Set a new game status for a finished round
-                self.checkWinners()
+                self.recordWinners()
                 self.display()
                 self.setTimer(2000)  # Pause to view the result
                 
