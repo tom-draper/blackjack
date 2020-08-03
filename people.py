@@ -12,10 +12,10 @@ class Person:
         """Draws a random cardand adds it to the hand."""
         # vvv TESTING
         # available_cards = ['AC', 'AD', 'AH', 'AS']
-        # available_cards =  ['10C', '10D', '10H', '10S',
-        #                      'JC', 'JD', 'JH', 'JS',
-        #                      'KC', 'KD', 'KH', 'KS',
-        #                      'QC', 'QD', 'QH', 'QS']
+        available_cards =  ['10C', '10D', '10H', '10S',
+                              'JC', 'JD', 'JH', 'JS',
+                              'KC', 'KD', 'KH', 'KS',
+                              'QC', 'QD', 'QH', 'QS']
         # ^^^ TESTING
         card_code = np.random.choice(available_cards)
         available_cards.remove(card_code)

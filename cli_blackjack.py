@@ -29,6 +29,41 @@ class Blackjack:
                 'JC', 'JD', 'JH', 'JS', 'KC', 'KD', 'KH', 'KS', 
                 'QC', 'QD', 'QH', 'QS']
     
+    def canSplit(self):
+        if len(self.player.hand.cards) == 2:
+            player_cards = self.player.hand.cards
+            card_values = [card.card_value for card in player_cards]
+            # Possible to split if both cards are the same value
+            return card_values[0] == card_values[1]
+        return False
+
+    def playerBust(self, bust):
+        if type(bust) is tuple:
+            if bust[0] == True and bust[1] == True:
+                return True
+            else:
+                return False
+        return bust
+    
+    def split(self):
+        self.player.hand.split = True
+        # Modify cards to indicate split
+        card1, card2 = self.player.hand.cards[0], self.player.hand.cards[1]
+        self.player.hand.cards = [[card1], [card2]]
+        # Modify hand value to indivate split
+        hand_value1, hand_value2 = card1.get_card_value(), card2.get_card_value()
+        # If the card is not an Ace, cast to a tuple hand value representation
+        # An Ace has two possible values and is represented as a tuple by default
+        if type(hand_value1) is int:
+            hand_value1 = (hand_value1, )
+        if type(hand_value2) is int:
+            hand_value2 = (hand_value2, )
+        # Create tuple pair of hand values, one for left and right card pile
+        self.player.hand.hand_value = (hand_value1, hand_value2)
+        # Modify bust to indicate split
+        self.player.hand.bust = tuple((False, False))
+        self.current_side = 'left'
+    
     def calcBust(self, dealer=False, player_id=0):
         """Checks whether a given players hand has bust (hand value exceeded 21)."""
         if dealer:
@@ -53,8 +88,10 @@ class Blackjack:
                     if hand_value <= 21:
                         right_bust = False
                 player.hand.bust = tuple((left_bust, right_bust))
-                return left_bust and right_bust  # Bust if both piles bust
+                # Player finished playing if right (second) pile has bust
+                return right_bust  
             
+        # Default, one-card-pile bust check
         bust = True
         # Check if there is a possible hand value under 21
         for hand_value in player.hand.hand_value:
@@ -102,7 +139,10 @@ class Blackjack:
         """Checks whether every player has bust (hand value exceeds 21)."""
         # Look for player who hasn't bust
         for i in range(self.no_players):
-            if self.people[f'player{i}'].hand.bust == False:
+            if self.people[f'player{i}'].hand.split:
+                if self.people[f'player{i}'].hand.bust[0] == False or self.people[f'player{i}'].hand.bust[1] == False:
+                    return False
+            elif self.people[f'player{i}'].hand.bust == False:
                 return False
         return True
     

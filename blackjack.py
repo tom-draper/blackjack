@@ -305,6 +305,7 @@ class GUIBlackjack(Blackjack):
                                  int(centre_pos[1])))
     
     def displayRoundOutcome(self):
+        """Using the game status modified by the checkWinners function, display whether """
         if self.game_status.round_over:
             centre_pos = (int(self.WIDTH/2), int(self.HEIGHT/2))
             if self.game_status.draw:
@@ -334,45 +335,10 @@ class GUIBlackjack(Blackjack):
 
 
     # ------------ GAME FUNCITONS -----------------
-
-    def canSplit(self):
-        if len(self.player.hand.cards) == 2:
-            player_cards = self.player.hand.cards
-            card_values = [card.card_value for card in player_cards]
-            # Possible to split if both cards are the same value
-            return card_values[0] == card_values[1]
-        return False
-
-    def split(self):
-        self.player.hand.split = True
-        # Modify cards to indicate split
-        card1, card2 = self.player.hand.cards[0], self.player.hand.cards[1]
-        self.player.hand.cards = [[card1], [card2]]
-        # Modify hand value to indivate split
-        hand_value1, hand_value2 = card1.get_card_value(), card2.get_card_value()
-        # If the card is not an Ace, cast to a tuple hand value representation
-        # An Ace has two possible values and is represented as a tuple by default
-        if type(hand_value1) is int:
-            hand_value1 = (hand_value1, )
-        if type(hand_value2) is int:
-            hand_value2 = (hand_value2, )
-        # Create tuple pair of hand values, one for left and right card pile
-        self.player.hand.hand_value = (hand_value1, hand_value2)
-        # Modify bust to indicate split
-        self.player.hand.bust = tuple((False, False))
-        self.current_side = 'left'
-
-    def playerBust(self, bust):
-        if type(bust) is tuple:
-            if bust[0] == True and bust[1] == True:
-                return True
-            else:
-                return False
-        return bust
     
     def checkWinners(self):
-        """Checks each player and prints whether they have won or lost against
-           the dealer."""
+        """Checks player result and alters the game status to indicate their
+           win, loss or draw during the next execution of the display function."""
         
         # TODO : REVIEW
         if self.player.hand.split:
@@ -495,16 +461,17 @@ class GUIBlackjack(Blackjack):
             # Ensure all buttons active before play
             self.enableAllButtons()
             
-            # Handle actions until player stands, busts or quits
+            # PLAYER GAME LOOP
             self.stand = False
-            while (not self.stand and not self.playerBust(self.player.hand.bust)) and not self.quit:
+            while not self.stand and not self.quit:
                 self.handleEvents()  # Update stand (if stand action selected)
                 self.display()
                 if self.calcBust():  # Update players hand bust status
                     self.action_btns_active = False  # Grey out action buttons if bust
                     self.setTimer(1000)
+                    break
             
-            # Dealer begins drawing
+            # DEALER GAME LOOP
             if not self.allBust() and not self.quit:
                 print('Dealer\n{}\n'.format(self.people['dealer']))
 
