@@ -350,7 +350,14 @@ class GUIBlackjack(Blackjack):
         self.player.hand.cards = [[card1], [card2]]
         # Modify hand value to indivate split
         hand_value1, hand_value2 = card1.get_card_value(), card2.get_card_value()
-        self.player.hand.hand_value = (tuple((hand_value1,)), tuple((hand_value2,)))
+        # If the card is not an Ace, cast to a tuple hand value representation
+        # An Ace has two possible values and is represented as a tuple by default
+        if type(hand_value1) is int:
+            hand_value1 = (hand_value1, )
+        if type(hand_value2) is int:
+            hand_value2 = (hand_value2, )
+        # Create tuple pair of hand values, one for left and right card pile
+        self.player.hand.hand_value = (hand_value1, hand_value2)
         # Modify bust to indicate split
         self.player.hand.bust = tuple((False, False))
         self.current_side = 'left'

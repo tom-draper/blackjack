@@ -90,7 +90,7 @@ class Blackjack:
             print(f' X{times}')
         else:
             print()
-            
+        
         for _ in range(times):
             if len(self.cards) == 0:
                 self.refillDeck()
