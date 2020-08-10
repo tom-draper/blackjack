@@ -1,11 +1,11 @@
 from people import Player, Dealer
-
+from hand import Deck
 import time
 
 
 class Blackjack:
     def __init__(self, no_players=1, player_bank=1000):
-        self.cards = self.refillDeck()
+        self.deck = Deck()
         self.no_players = no_players
         
         # People dict holds {name : person_object}
@@ -17,41 +17,30 @@ class Blackjack:
             self.people[f'player{i}'] = Player(player_bank)
             
         self.current_side = None  # If split, hit on left pile then right
-
     
-    def refillDeck(self):
-        """Return a refilled deck of cards list."""
-        return ['2C', '2D', '2H', '2S', '3C', '3D', '3H', '3S',
-                '4C', '4D', '4H', '4S', '5C', '5D', '5H', '5S',
-                '6C', '6D', '6H', '6S', '7C', '7D', '7H', '7S',
-                '8C', '8D', '8H', '8S', '9C', '9D', '9H', '9S',
-                '10C', '10D', '10H', '10S', 'AC', 'AD', 'AH', 'AS',
-                'JC', 'JD', 'JH', 'JS', 'KC', 'KD', 'KH', 'KS', 
-                'QC', 'QD', 'QH', 'QS']
-    
-    def canSplit(self):
-        if len(self.player.hand.cards) == 2:
-            player_cards = self.player.hand.cards
-            card_values = [card.card_value for card in player_cards]
+    def canSplit(self, player_id=0):
+        player_cards = self.people[f'player{player_id}'].hand.cards
+        
+        if len(player_cards) == 2:
             # Possible to split if both cards are the same value
-            return card_values[0] == card_values[1]
+            return player_cards[0].value == player_cards[1].value
         return False
 
     def playerBust(self, bust):
         if type(bust) is tuple:
-            if bust[0] == True and bust[1] == True:
-                return True
-            else:
-                return False
-        return bust
+            return bust[0] == True and bust[1] == True
+        else:
+            return bust
     
     def split(self):
         self.player.hand.split = True
+        
         # Modify cards to indicate split
         card1, card2 = self.player.hand.cards[0], self.player.hand.cards[1]
         self.player.hand.cards = [[card1], [card2]]
+        
         # Modify hand value to indivate split
-        hand_value1, hand_value2 = card1.get_card_value(), card2.get_card_value()
+        hand_value1, hand_value2 = card1.value, card2.value
         # If the card is not an Ace, cast to a tuple hand value representation
         # An Ace has two possible values and is represented as a tuple by default
         if type(hand_value1) is int:
@@ -60,6 +49,7 @@ class Blackjack:
             hand_value2 = (hand_value2, )
         # Create tuple pair of hand values, one for left and right card pile
         self.player.hand.hand_value = (hand_value1, hand_value2)
+        
         # Modify bust to indicate split
         self.player.hand.bust = tuple((False, False))
         self.current_side = 'left'
@@ -129,9 +119,9 @@ class Blackjack:
             print()
         
         for _ in range(times):
-            if len(self.cards) == 0:
-                self.refillDeck()
-            player.draw(self.cards, side)
+            if len(self.deck) == 0:
+                self.deck.refillDeck()
+            player.draw(self.deck, side)
         
         print(player, '\n')  # Display plaeyr hand status
     
@@ -147,7 +137,7 @@ class Blackjack:
         return True
     
     def divider(self):
-        print('-------------\n')
+        print('-'*25 + '\n')
     
     def collectWinnings(self, player_id=0, draw=False):
         placed_bet = self.people[f'player{player_id}'].hand.bet
@@ -187,7 +177,7 @@ class Blackjack:
         quit = False
         game_count = 1
         while not quit:
-            print(f'-------- Game {game_count} begin --------\n')
+            print(f'\n-------- Game {game_count} begin --------\n')
             
             # Dealer init
             self.personDraws(dealer=True)
@@ -223,30 +213,30 @@ class Blackjack:
                     if choice.lower() == 'hit' or choice.lower() == 'h':  # Draw
                         self.personDraws(player_id=i)
                         
-                        if self.checkBust(player_id=i):
+                        if self.calcBust(player_id=i):
                             print(f'** Player {i + 1} bust! **\n')
                             break
                     elif choice.lower() == "stand" or choice.lower() == "s":
                         break
                     else:
                         print('Please enter an option.')
-                if quit:
-                    break
-            if quit:
-                break
+                if quit: break
+            if quit: break
+            
+            self.divider()
             
             # If every player hasn't bust, the dealer begins drawing
             if not self.allBust():
-                print('Dealer\n{}\n'.format(self.people['dealer']))
+                print('Dealer begins drawing...\n{}\n'.format(self.people['dealer']))
                 
                 # Dealer draws
                 while self.dealerContinueDraw():
                     time.sleep(1.5)
                     self.personDraws(dealer=True)
                 
-                if self.bust(dealer=True):
+                if self.calcBust(dealer=True):
                     print('** Dealer bust! **')
-            
+
                 self.checkWinners()
             
             self.reset()
@@ -259,7 +249,7 @@ class Blackjack:
             string += f'{person}\n'
  
         # Print list of cards remaining
-        string += f'Cards remaining: {self.cards}'
+        string += f'Cards remaining: {self.deck}'
         
         return string
 

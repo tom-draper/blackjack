@@ -1,5 +1,4 @@
 from hand import Hand, Card
-
 import numpy as np
 from itertools import count
 
@@ -8,19 +7,12 @@ class Person:
     def __init__(self):
         self.hand = Hand()
     
-    def draw(self, available_cards, side=None):
+    def draw(self, deck, side=None):
         """Draws a random cardand adds it to the hand."""
-        # vvv TESTING
-        # available_cards = ['AC', 'AD', 'AH', 'AS']
-        #available_cards =  ['10C', '10D', '10H', '10S',
-        #                      'JC', 'JD', 'JH', 'JS',
-        #                      'KC', 'KD', 'KH', 'KS',
-        #                      'QC', 'QD', 'QH', 'QS']
-        # ^^^ TESTING
-        card_code = np.random.choice(available_cards)
-        available_cards.remove(card_code)
-        card = Card(card_code)
-            
+
+        card = deck.draw()
+        
+        # Add new card to person's hand
         if self.hand.split:
             if side == 'left':
                 self.hand.cards[0].append(card)
@@ -31,7 +23,7 @@ class Person:
         else:
             self.hand.cards.append(card)  # Add card to hand
             
-        self.hand.add_to_hand_value(card, side)  # Update hand total
+        self.hand.addToHandValue(card, side)  # Update hand total
         self.tidyHandValue()
         
         return card
@@ -80,6 +72,7 @@ class Person:
     def __str__(self):
         return f'Hand: {self.hand}'
 
+
 class Player(Person):
     _ids = count(0)
     
@@ -98,6 +91,7 @@ class Player(Person):
     
     def __str__(self):
         return f'Player {self.id + 1} -> ' + super().__str__() + f', Bank: {self.bank}'
+
 
 class Dealer(Person):
     def __init(self):

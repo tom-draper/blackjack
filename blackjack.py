@@ -176,7 +176,8 @@ class GUIBlackjack(Blackjack):
 
         shift = 0  # Shift each subsequent card along to get spread effect
         for card in cards:
-            image = pygame.image.load(card.path)
+            card_code = card.rank + card.suit[0].upper()
+            image = pygame.image.load(f'resources/{card_code}.png')
             image = self.scaleImg(image, self.card_scale_factor)
             self.win.blit(image, (int(pos[0] + shift), int(pos[1])))
             shift += (self.card_size[0])/2
@@ -473,7 +474,7 @@ class GUIBlackjack(Blackjack):
             
             # DEALER GAME LOOP
             if not self.allBust() and not self.quit:
-                print('Dealer\n{}\n'.format(self.people['dealer']))
+                print('Dealer begins drawing...\n{}\n'.format(self.people['dealer']))
 
                 # Dealer draws
                 wait_before_draw = 1500
