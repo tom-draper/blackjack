@@ -57,6 +57,7 @@ class Deck:
         self._cards.remove(card)
         return card
 
+
 class Hand:
     def __init__(self):
         self.bet = 0

@@ -30,25 +30,18 @@ class Person:
     
     def tidyHandValue(self):
         """Remove any excess hand values over 21."""
+        
         # Remove any bust hand values if more than one hand value option exists
-  
         if self.hand.split:
             new_hand_value = []
-            if len(self.hand.hand_value[0]) > 1:
-                for hand_value in self.hand.hand_value[0]:
-                    if hand_value == 21:
-                        new_hand_value = [21]  # Overwrite hand value, only keep 21
-                        break
-                    elif hand_value <= 21:
-                        new_hand_value.append(hand_value)
-            
-            if len(self.hand.hand_value[1]) > 1:
-                for hand_value in self.hand.hand_value[1]:
-                    if hand_value == 21:
-                        new_hand_value = [21]  # Overwrite hand value, only keep 21
-                        break
-                    elif hand_value <= 21:
-                        new_hand_value.append(hand_value)
+            for i in range(2):
+                if len(self.hand.hand_value[i]) > 1:
+                    for hand_value in self.hand.hand_value[i]:
+                        if hand_value == 21:
+                            new_hand_value = [21]  # Overwrite hand value, only keep 21
+                            break
+                        elif hand_value <= 21:
+                            new_hand_value[i].append(hand_value)
 
             if len(self.hand.hand_value[0]) > 1 or len(self.hand.hand_value[1]) > 1:
                 # Update player's hand value
