@@ -66,20 +66,43 @@ class GUIBlackjack(Blackjack):
         self.split_gap = self.card_size[0]
 
 
-    # ---------- GAME TOOLS -------------
+    # ------------ GAME TOOLS ---------------
 
     def getCardSize(self, card):
+        """Returns the pixel size of the card image scaled by the class scale factor.
+
+        Args:
+            card ("Card" namedtuple): the card to determine which image to use.
+
+        Returns:
+            tuple (int, int): size of the scaled card image. 
+        """
         image = pygame.image.load(f'resources/{card}.png')
         # Return the actual card image dimensions multipled by the scale factor 
         # used during game to display
         return tuple(map(lambda x: x*self.card_scale_factor, image.get_size()))
 
     def scaleImg(self, image, scale_factor):
+        """Scales an image uniformly by a scale factor.
+
+        Args:
+            image (pygame surface): the image to scale.
+            scale_factor (float): the scale factor to scale the image by.
+
+        Returns:
+            pygame surface: scaled image.
+        """
         width, height = image.get_size()
         return pygame.transform.scale(image, (int(width*scale_factor), 
                                               int(height*scale_factor)))
     
-    def setTimer(self, time):
+    def pauseGame(self, time):
+        """Pauses game actions for a input time while still handling pygame events 
+           (mouse click, window move etc.).
+
+        Args:
+            time (float): length of time to pause.
+        """
         last = pygame.time.get_ticks()
         while True and not self.quit:
             now = pygame.time.get_ticks()
@@ -385,55 +408,57 @@ class GUIBlackjack(Blackjack):
     def recordWinners(self):
         """Checks player result and alters the game status to indicate their
            win, loss or draw during the next execution of the display function."""
+           
+        win_game_status = self.GameStatus(round_over=True, draw=False, player_won=True, winnings=winnings)
+        draw_game_status = self.GameStatus(round_over=True, draw=True, player_won=None, winnings=winnings)
+        lose_game_status = self.GameStatus(round_over=True, draw=False, player_won=False, winnings=0)
         
         # TODO : REVIEW
         if self.player.hand.split:
-            results = []
-            winnings = 0
+            hand_results = []
+            total_winnings = 0
             # Get result for both hand
             for i in range(2):
                 # Check left hand for win
                 if (self.player.hand.hand_value[i] > self.people['dealer'].hand.hand_value or \
                             self.people['dealer'].hand.bust) and not self.player.hand.bust[i]:
                     # Record win
-                    results.append('win')
-                    winnings += self.player.hand.bet*2
+                    hand_results.append('win')
+                    total_winnings += self.player.hand.bet*2
                 elif self.player.hand.hand_value[i] == self.people['dealer'].hand.hand_value or \
                             self.player.hand.bust and self.people['dealer'].hand.bust:
                     # Record draw
-                    results.append('draw')
-                    winnings += self.player.hand.bet
+                    hand_results.append('draw')
+                    total_winnings += self.player.hand.bet
                 else:
                     # Player lose
-                    results.append('lose')
+                    hand_results.append('lose')
                 
             # Calculate overall results and set game status for end screen
             # Based on combination of results for both hands
             if results[0] == 'win' or results[1] == 'win':  # One hand wins
-                self.game_status = self.GameStatus(round_over=True, draw=False, player_won=True, winnings=winnings)
-                self.collectWinnings(player_id=0)  
+                self.game_status = win_game_status
+                self.collectWinnings(player_id=0, override_winnings=winnings)  
             elif results[0] == 'draw' or results[1] == 'draw':  # If two draws, or one draw and a loss 
-                self.game_status = self.GameStatus(round_over=True, draw=True, player_won=None, winnings=winnings)
-                self.collectWinnings(player_id=0, draw=True)
+                self.game_status = draw_game_status
+                self.collectWinnings(player_id=0, draw=True, override_winnings=winnings)
             else:  # Both lose
-                self.game_status = self.GameStatus(round_over=True, draw=False, player_won=False, winnings=0)
+                self.game_status = lose_game_status
 
         else:
             if (self.player.hand.hand_value > self.people['dealer'].hand.hand_value or \
                         self.people['dealer'].hand.bust) and not self.player.hand.bust:
                 # Player win
-                winnings = self.player.hand.bet*2
-                self.game_status = self.GameStatus(round_over=True, draw=False, player_won=True, winnings=winnings)
+                self.game_status = win_game_status
                 self.collectWinnings(player_id=0)
             elif self.player.hand.hand_value == self.people['dealer'].hand.hand_value or \
                         self.player.hand.bust and self.people['dealer'].hand.bust:
                 # Draw
-                winnings = self.player.hand.bet
-                self.game_status = self.GameStatus(round_over=True, draw=True, player_won=None, winnings=winnings)
-                self.collectWinnings(player_id=0, draw=True)
+                self.game_status = draw_game_status
+                self.addWinnings(player_id=0, draw=True)
             else:
                 # Player lose
-                self.game_status = self.GameStatus(round_over=True, draw=False, player_won=False, winnings=0)
+                self.game_status = lose_game_status
 
     def handleEvents(self):
         handled = False
@@ -494,11 +519,11 @@ class GUIBlackjack(Blackjack):
             # Dealer initialise
             self.personDraws(dealer=True)
             self.display()
-            self.setTimer(1000)
+            self.pauseGame(1000)
             
             # Players initialise
             self.personDraws()
-            self.setTimer(1000)
+            self.pauseGame(1000)
             self.personDraws()
             # Check if split is an option
             if self.canSplit():
@@ -515,7 +540,7 @@ class GUIBlackjack(Blackjack):
                 self.display()
                 if self.calcBust():  # Update players hand bust status
                     self.action_btns_active = False  # Grey out action buttons if bust
-                    self.setTimer(1000)
+                    self.pauseGame(1000)
                     break
             
             # DEALER GAME LOOP
@@ -535,13 +560,13 @@ class GUIBlackjack(Blackjack):
                 
                 # Update dealer bust status
                 self.calcBust(dealer=True)
-                self.setTimer(2000)  # Pause to view the result
+                self.pauseGame(2000)  # Pause to view the result
             
             if not self.quit:
                 # Set a new game status for a finished round
                 self.recordWinners()
                 self.display()
-                self.setTimer(2000)  # Pause to view the result
+                self.pauseGame(2000)  # Pause to view the result
                 
                 self.reset()  # Redraw new hands
                 self.action_btns_active = True

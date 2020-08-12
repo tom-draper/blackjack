@@ -139,13 +139,16 @@ class Blackjack:
     def divider(self):
         print('-'*25 + '\n')
     
-    def collectWinnings(self, player_id=0, draw=False):
-        placed_bet = self.people[f'player{player_id}'].hand.bet
-        
-        if draw:
-            winnings = placed_bet
+    def collectWinnings(self, player_id=0, draw=False, override_winnings=0):
+        if override_winnings != 0:
+            winnings = override_winnings
         else:
-            winnings = placed_bet * 2
+            placed_bet = self.people[f'player{player_id}'].hand.bet
+            
+            if draw:
+                winnings = placed_bet
+            else:
+                winnings = placed_bet * 2
             
         # Add winnings to player bank
         self.people[f'player{player_id}'].bank += winnings
@@ -153,7 +156,7 @@ class Blackjack:
     def checkWinners(self):
         """Checks each player and prints whether they have won or lost against
            the dealer."""
-        # Loop through each player2
+        # Loop through each player
         for i in range(self.no_players):
             player = self.people[f'player{i}']
             if player.hand.hand_value > self.people['dealer'].hand.hand_value or \
