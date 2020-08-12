@@ -110,6 +110,8 @@ class GUIBlackjack(Blackjack):
         return ((no_cards + 1)/2) * ((self.card_size[0]))
     
     def displayActionButtons(self):
+        """Draws each action button on the window. Action buttons are used to 
+           take take an action on your hand (hit, split, stand)."""
         for i, btn in enumerate(self.action_btns):
             # Draw a circle
             # Iterate through positions left to right along the middle of the screen
@@ -138,6 +140,8 @@ class GUIBlackjack(Blackjack):
             self.buttons[btn] = centre_pos
     
     def displayBetButtons(self):
+        """Draws each bet button on the window. Buttons are used to place bets 
+           before round begins."""
         btn_colours = [self.BROWN, self.RED, self.BLUE, self.YELLOW, self.BLACK]
         
         for i, btn in enumerate(self.bet_btns):
@@ -166,39 +170,27 @@ class GUIBlackjack(Blackjack):
             self.buttons[btn] = centre_pos
 
     def displayButtons(self):
+        """Calls the functions to draw out all game buttons."""
         self.displayActionButtons()
         self.displayBetButtons()
-    
-    def displayCardPile(self, cards, centre_pos):
-        # Convert centre position to top left corner position
-        pos = (centre_pos[0] - self.cardPileWidth(len(cards), self.card_scale_factor)/2,
-               centre_pos[1] - self.card_size[1]/2)
 
-        shift = 0  # Shift each subsequent card along to get spread effect
-        for card in cards:
-            card_code = card.rank + card.suit[0].upper()
-            image = pygame.image.load(f'resources/{card_code}.png')
-            image = self.scaleImg(image, self.card_scale_factor)
-            self.win.blit(image, (int(pos[0] + shift), int(pos[1])))
-            shift += (self.card_size[0])/2
-    
-    def displayCards(self, centre_pos, dealer=False, player_id=0):
-        if dealer:
-            cards = self.people['dealer'].hand.cards
-        else:
-            cards = self.people[f'player{player_id}'].hand.cards
-
-        if len(cards) > 0:
-            if type(cards[0]) is list:  # Hand has been split
-                # Display both piles
-                left_centre_pos = (centre_pos[0] - self.card_size[0], centre_pos[1])
-                self.displayCardPile(cards[0], left_centre_pos)
-                right_centre_pos = (centre_pos[0] + self.card_size[0], centre_pos[1])
-                self.displayCardPile(cards[1], right_centre_pos)
-            else:  # Normal hand
-                self.displayCardPile(cards, centre_pos)
-    
     def buildHandValueString(self, dealer=False, player_id=0):
+        """Build a string representing a person's hand value to display in game.
+           Hand values are internally stored as a tuple containing all possible
+           values a hand could take (as Aces can take two values).
+
+        Args:
+            dealer (bool, optional): Whether to use the dealers hand value instead 
+                                     of a players. If
+                                     true, player_id argument irrelevant. Defaults 
+                                     to False.
+            player_id (int, optional): The ID of the player whose hand value should
+                                       be used. If dealer argument is false, 
+                                       player_id is used. Defaults to 0.
+
+        Returns:
+            String: string representation of the person's hand value.
+        """
         no_hands = 1  # Assume single pile of cards (no split)
         if dealer:
             hand_value = self.people['dealer'].hand.hand_value
@@ -207,7 +199,7 @@ class GUIBlackjack(Blackjack):
             if self.people[f'player{player_id}'].hand.split:
                 no_hands = 2
         
-        # Add single hand value to list for generalised loop below
+        # If no split, add single hand value to list for generalised loop below
         if no_hands == 1:
             hand_value = [hand_value]
         
@@ -229,7 +221,55 @@ class GUIBlackjack(Blackjack):
         # Return hand value for a single card
         return strings[0]
     
+    def displayCardPile(self, cards, centre_pos):
+        """Draws a pile of overlapping cards on the window.
+
+        Args:
+            cards (list of "Card" namedtuples): List of cards to display.
+            centre_pos (tuple (x,y)): Centre position of the entire card pile 
+                                      (coordinates on the window).
+        """
+        # Convert centre position to top left corner position of card pile
+        pos = (centre_pos[0] - self.cardPileWidth(len(cards), self.card_scale_factor)/2,
+               centre_pos[1] - self.card_size[1]/2)
+        
+
+        shift = 0  # Shift each subsequent card along to get spread effect
+        for card in cards:
+            card_code = card.rank + card.suit[0].upper()
+            image = pygame.image.load(f'resources/{card_code}.png')
+            image = self.scaleImg(image, self.card_scale_factor)
+            self.win.blit(image, (int(pos[0] + shift), int(pos[1])))
+            shift += (self.card_size[0])/2
+    
+    def displayCards(self, centre_pos, dealer=False, player_id=0):
+        """Gets cards list of the correct person using arguments.
+           Displays one card pile in the given position, or two piles if player 
+           has split.
+
+        Args:
+            centre_pos ([type]): [description]
+            dealer (bool, optional): [description]. Defaults to False.
+            player_id (int, optional): [description]. Defaults to 0.
+        """
+        if dealer:
+            cards = self.people['dealer'].hand.cards
+        else:
+            cards = self.people[f'player{player_id}'].hand.cards
+
+        if len(cards) > 0:
+            # If split, cards = [[cards1], [cards2]] rather than [cards]
+            if type(cards[0]) is list:  # If split
+                # Display both piles
+                left_centre_pos = (centre_pos[0] - self.card_size[0], centre_pos[1])
+                self.displayCardPile(cards[0], left_centre_pos)
+                right_centre_pos = (centre_pos[0] + self.card_size[0], centre_pos[1])
+                self.displayCardPile(cards[1], right_centre_pos)
+            else:  # Normal, single-pile hand
+                self.displayCardPile(cards, centre_pos)
+    
     def displayDealer(self):
+        """Displays dealers cards, current hand value and whether they've bust."""
         # Display cards
         centre_pos = (self.WIDTH/2, 250)
         self.displayCards(centre_pos, dealer=True)
@@ -246,6 +286,12 @@ class GUIBlackjack(Blackjack):
         self.win.blit(text, (int(centre_pos[0] - text.get_width()/2), int(centre_pos[1] + (self.card_size[1])/2 + 20)))
     
     def displayPlayer(self, player_id=0):
+        """Display players cards, current hand value, whether they've bust.
+
+        Args:
+            player_id (int, optional): The ID of the player to be displayed. 
+                                       Defaults to 0.
+        """
         player = self.people[f'player{player_id}']
         
         # Display cards
@@ -253,7 +299,7 @@ class GUIBlackjack(Blackjack):
         self.displayCards(centre_pos)
         
         # TODO: REVIEW
-        # Display bust
+        # Display "bust" over the player's bust card pile
         if player.hand.split:
             # Left hand shifted to left by split gap, right hand shifted to right by split gap
             x_pos_change = [-self.split_gap, self.split_gap]
@@ -269,20 +315,20 @@ class GUIBlackjack(Blackjack):
                 self.win.blit(text, (int(centre_pos[0] - text.get_width()/2), 
                                     int(centre_pos[1] - text.get_height()/2)))
             
-        # Display bank value
+        # Display players bank value
         bank_value = player.bank
         text = self.LARGER.render(f'£{bank_value}', 1, self.BLACK)
         self.win.blit(text, (int(100 - text.get_width()/2), 
                              int(self.HEIGHT - 100)))
         
-        # Display winnings added to bank value
+        # Display any winnings from the last round next to player's bank value 
         if self.game_status.round_over:
             if self.game_status.winnings > 0:
                 winnings_text = self.NORMAL.render(f'+{self.game_status.winnings}', 1, self.BLACK)
                 self.win.blit(winnings_text, (int(100 - text.get_width()/2 + 130), 
                                               int(self.HEIGHT + winnings_text.get_height()/2 - 100)))
                 
-        # Display hand value
+        # Display hand value below player's cards
         if player.hand.split:
             left_hand_value_str, right_hand_value_str = self.buildHandValueString()
             left_text = self.NORMAL.render(left_hand_value_str, 1, self.BLACK)
@@ -318,10 +364,10 @@ class GUIBlackjack(Blackjack):
                                  int(centre_pos[1] - text.get_height()/2)))
     
     def display(self):
-        # Window
+        """Displays the current blackjack game state to the window."""
         self.win.fill(self.GREEN_BG)
 
-        # Title
+        # Title at top of screen
         text = self.TITLE.render('Blackjack', 1, self.BLACK)
         self.win.blit(text, (int(self.WIDTH/2 - text.get_width()/2), 20))
 
@@ -441,16 +487,16 @@ class GUIBlackjack(Blackjack):
             clock.tick(FPS)
             self.game_status = self.default_game_status
             
-            # Disable buttons while set up
+            # Disable all buttons while set up game
             self.disableAllButtons()
             self.display()
             
-            # Dealer init
+            # Dealer initialise
             self.personDraws(dealer=True)
             self.display()
             self.setTimer(1000)
             
-            # Players init
+            # Players initialise
             self.personDraws()
             self.setTimer(1000)
             self.personDraws()
