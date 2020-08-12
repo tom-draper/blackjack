@@ -112,10 +112,12 @@ class GUIBlackjack(Blackjack):
             self.display()
 
     def enableAllButtons(self):
+        """Make all available to interact with."""
         self.action_btns_active = True
         self.bet_btns_active = True
     
     def disableAllButtons(self):
+        """Grey out buttons and make them unavailable to interact with."""
         self.action_btns_active = False
         self.bet_btns_active = False
 
@@ -461,13 +463,17 @@ class GUIBlackjack(Blackjack):
                 self.game_status = lose_game_status
 
     def handleEvents(self):
-        handled = False
+        """Handle events that have occurred since the last time this function
+           was run. Events include mouse clicks on active buttons and quitting 
+           the game."""
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:  # Window close button pressed
                 self.quit = True
-                handled = True
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 m_x, m_y = pygame.mouse.get_pos()  # x,y pos of mouse
+                
+                # Handle any button clicks
                 for btn, pos in self.buttons.items():
                     d = math.sqrt((pos[0] - m_x)**2 + (pos[1] - m_y)**2)
                     if d < self.RADIUS:  # If click inside this button
@@ -497,12 +503,11 @@ class GUIBlackjack(Blackjack):
                         elif btn.isdigit() and self.bet_btns_active:
                             self.player.placeBet(int(btn))
                             break
-                handled = True
-        return handled
 
     def main(self):
         """One player GUI Blackjack game.
            Overrides the parent class playGame (command line version) method."""
+        
         FPS = 60  # Max frames per second
         # Create a clock obeject to make sure our game runs at this FPS
         clock = pygame.time.Clock()
