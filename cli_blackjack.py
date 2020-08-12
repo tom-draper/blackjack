@@ -19,6 +19,15 @@ class Blackjack:
         self.current_side = None  # If split, hit on left pile then right
     
     def canSplit(self, player_id=0):
+        """Checks whether a player has the appropriate hand to be able to split.
+
+        Args:
+            player_id (int, optional): the ID of the player whose hand should be 
+                                       checked. Defaults to 0.
+
+        Returns:
+            boolean: whether the player can split with the hand they have.
+        """
         player_cards = self.people[f'player{player_id}'].hand.cards
         
         if len(player_cards) == 2:
@@ -27,7 +36,19 @@ class Blackjack:
         return False
 
     def playerBust(self, bust):
-        if type(bust) is tuple:
+        """Checks whether the player is bust by extracting a overall bust boolean 
+           from a players bust attibute. If the player has split, their bust
+           attribute will be a tuple containing two bust booleans for the two hands.
+
+        Args:
+            bust (boolean or tuple(boolean,boolean)): the bust status of a players 
+                                                      hand. If the player has split, 
+                                                      they will have a boolean for
+                                                      both hands.
+        Returns:
+            boolean: whether the player has bust.
+        """
+        if type(bust) is tuple:  # If split
             return bust[0] == True and bust[1] == True
         else:
             return bust
@@ -140,6 +161,23 @@ class Blackjack:
         print('-'*25 + '\n')
     
     def collectWinnings(self, player_id=0, draw=False, override_winnings=0):
+        """Collects a players winnings from a round. 
+
+        Args:
+            player_id (int, optional): the ID of the player whose hand value should
+                                       be used. If dealer argument is false, 
+                                       player_id is used. Defaults to 0.
+            dealer (bool, optional): whether to use the dealers hand value instead 
+                                     of a players. If
+                                     true, player_id argument irrelevant. Defaults 
+                                     to False.
+            override_winnings (int, optional): include value >0 to override the 
+                                               expected amount of winnings (twice
+                                               the placed bet or placed bet for draw).
+                                               Intended to be used when player has
+                                               split and winnings from both card 
+                                               piles must be calculated. Defaults to 0.
+        """
         if override_winnings != 0:
             winnings = override_winnings
         else:
@@ -172,6 +210,7 @@ class Blackjack:
             print()
     
     def reset(self):
+        """Reset each persons hand, ready for a new game."""
         for person in self.people.values():
             person.reset()
     

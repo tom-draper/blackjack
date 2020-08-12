@@ -205,11 +205,11 @@ class GUIBlackjack(Blackjack):
            values a hand could take (as Aces can take two values).
 
         Args:
-            dealer (bool, optional): Whether to use the dealers hand value instead 
+            dealer (bool, optional): whether to use the dealers hand value instead 
                                      of a players. If
                                      true, player_id argument irrelevant. Defaults 
                                      to False.
-            player_id (int, optional): The ID of the player whose hand value should
+            player_id (int, optional): the ID of the player whose hand value should
                                        be used. If dealer argument is false, 
                                        player_id is used. Defaults to 0.
 
