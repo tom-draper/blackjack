@@ -9,7 +9,6 @@ class Person:
     
     def draw(self, deck, side=None):
         """Draws a random cardand adds it to the hand."""
-
         card = deck.draw()
         
         # Add new card to person's hand
@@ -30,7 +29,6 @@ class Person:
     
     def tidyHandValue(self):
         """Remove any excess hand values over 21."""
-        
         # Remove any bust hand values if more than one hand value option exists
         if self.hand.split:
             new_hand_value = []
@@ -76,6 +74,8 @@ class Player(Person):
         self.bank = bank
 
     def placeBet(self, bet):
+        """Places the input bet amount as a bet on the players current hand and
+           withdraws that amount from their bank."""
         if self.bank - bet < 0:
             print('Insufficient funds')
         else:

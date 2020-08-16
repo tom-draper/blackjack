@@ -64,6 +64,7 @@ class GUIBlackjack(Blackjack):
         
         # Gap between displayed card hands when player has chosen split
         self.split_gap = self.card_size[0]
+        self.box_highlighter_border = 3
 
 
     # ------------ GAME TOOLS ---------------
@@ -245,6 +246,21 @@ class GUIBlackjack(Blackjack):
             return strings[0], strings[1] 
         # Return hand value for a single card
         return strings[0]
+
+    def centreToTopLeft(self, centre_pos, no_cards):
+        """Conver coordinates of the centre of a card pile to the top left of a
+           card pile, taking into consideration the number of cards in the pile.
+
+        Args:
+            centre_pos (tuple (int,int)): centre position of the card pile (window coordinates).
+            no_cards (int): number of cards on the pile.
+
+        Returns:
+            tuple (int,int): position of top left corner of the card pile.
+        """
+        top_left_pos = (centre_pos[0] - self.cardPileWidth(no_cards, self.card_scale_factor)/2,
+                        centre_pos[1] - self.card_size[1]/2)
+        return top_left_pos
     
     def displayCardPile(self, cards, centre_pos):
         """Draws a pile of overlapping cards on the window.
@@ -255,9 +271,7 @@ class GUIBlackjack(Blackjack):
                                       (coordinates on the window).
         """
         # Convert centre position to top left corner position of card pile
-        pos = (centre_pos[0] - self.cardPileWidth(len(cards), self.card_scale_factor)/2,
-               centre_pos[1] - self.card_size[1]/2)
-        
+        pos = self.centreToTopLeft(centre_pos, len(cards))
 
         shift = 0  # Shift each subsequent card along to get spread effect
         for card in cards:
@@ -286,10 +300,29 @@ class GUIBlackjack(Blackjack):
             # If split, cards = [[cards1], [cards2]] rather than [cards]
             if type(cards[0]) is list:  # If split
                 # Display both piles
-                left_centre_pos = (centre_pos[0] - self.card_size[0], centre_pos[1])
-                self.displayCardPile(cards[0], left_centre_pos)
-                right_centre_pos = (centre_pos[0] + self.card_size[0], centre_pos[1])
-                self.displayCardPile(cards[1], right_centre_pos)
+                left_pile_centre_pos = (centre_pos[0] - self.card_size[0], centre_pos[1])
+                self.displayCardPile(cards[0], left_pile_centre_pos)
+                right_pile_centre_pos = (centre_pos[0] + self.card_size[0], centre_pos[1])
+                self.displayCardPile(cards[1], right_pile_centre_pos)
+                
+                # Display box to current pile in focus
+                if self.current_side == 'left':
+                    top_left_pos = self.centreToTopLeft(left_pile_centre_pos, len(cards[0]))
+                    pygame.draw.rect(self.win, self.RED, 
+                                     pygame.Rect(int(top_left_pos[0] - self.box_highlighter_border), 
+                                                 int(top_left_pos[1] - self.box_highlighter_border),
+                                                 int(self.cardPileWidth(len(cards[0]), self.card_scale_factor) + self.box_highlighter_border*2), 
+                                                 int(self.card_size[1] + self.box_highlighter_border*2)), 
+                                     2)
+                elif self.current_side == 'right':
+                    top_left_pos = self.centreToTopLeft(right_pile_centre_pos, len(cards[1]))
+                    pygame.draw.rect(self.win, self.RED, 
+                                     pygame.Rect(int(top_left_pos[0]), 
+                                                 int(top_left_pos[1]),
+                                                 int(self.cardPileWidth(len(cards[1]), self.card_scale_factor)), 
+                                                 int(self.card_size[1])), 
+                                     2)
+                    
             else:  # Normal, single-pile hand
                 self.displayCardPile(cards, centre_pos)
     
@@ -406,42 +439,48 @@ class GUIBlackjack(Blackjack):
 
 
     # ------------ GAME FUNCITONS -----------------
+
+    def getHandResults(self, player_id=0):
+        player = self.people[f'player{player_id}']
+        
+        if player.hand.split:
+            hand_results = []
+            # Get result for both hand
+            for i in range(2):
+                # Check hand for win
+                if (player.hand.hand_value[i] > self.people['dealer'].hand.hand_value or \
+                            self.people['dealer'].hand.bust) and not player.hand.bust[i]:
+                    # Record win
+                    hand_results.append('win')
+                elif player.hand.hand_value[i] == self.people['dealer'].hand.hand_value or \
+                            self.player.hand.bust and self.people['dealer'].hand.bust:
+                    # Record draw
+                    hand_results.append('draw')
+                else:
+                    # Player lose
+                    hand_results.append('lose')
+        return tuple(hand_results)
     
     def recordWinners(self):
         """Checks player result and alters the game status to indicate their
            win, loss or draw during the next execution of the display function."""
-           
+        winnings = 0
         win_game_status = self.GameStatus(round_over=True, draw=False, player_won=True, winnings=winnings)
         draw_game_status = self.GameStatus(round_over=True, draw=True, player_won=None, winnings=winnings)
-        lose_game_status = self.GameStatus(round_over=True, draw=False, player_won=False, winnings=0)
+        lose_game_status = self.GameStatus(round_over=True, draw=False, player_won=False, winnings=winnings)
         
         # TODO : REVIEW
         if self.player.hand.split:
-            hand_results = []
-            total_winnings = 0
-            # Get result for both hand
-            for i in range(2):
-                # Check left hand for win
-                if (self.player.hand.hand_value[i] > self.people['dealer'].hand.hand_value or \
-                            self.people['dealer'].hand.bust) and not self.player.hand.bust[i]:
-                    # Record win
-                    hand_results.append('win')
-                    total_winnings += self.player.hand.bet*2
-                elif self.player.hand.hand_value[i] == self.people['dealer'].hand.hand_value or \
-                            self.player.hand.bust and self.people['dealer'].hand.bust:
-                    # Record draw
-                    hand_results.append('draw')
-                    total_winnings += self.player.hand.bet
-                else:
-                    # Player lose
-                    hand_results.append('lose')
+            winnings = self.calcSplitWinnings()
+            # Get tuple of results for the two hands e.g. ('win', 'draw')
+            hand_results = self.getHandResults()
                 
             # Calculate overall results and set game status for end screen
             # Based on combination of results for both hands
-            if results[0] == 'win' or results[1] == 'win':  # One hand wins
+            if hand_results[0] == 'win' or hand_results[1] == 'win':  # One hand wins
                 self.game_status = win_game_status
                 self.collectWinnings(player_id=0, override_winnings=winnings)  
-            elif results[0] == 'draw' or results[1] == 'draw':  # If two draws, or one draw and a loss 
+            elif hand_results[0] == 'draw' or hand_results[1] == 'draw':  # If two draws, or one draw and a loss 
                 self.game_status = draw_game_status
                 self.collectWinnings(player_id=0, draw=True, override_winnings=winnings)
             else:  # Both lose
@@ -451,13 +490,15 @@ class GUIBlackjack(Blackjack):
             if (self.player.hand.hand_value > self.people['dealer'].hand.hand_value or \
                         self.people['dealer'].hand.bust) and not self.player.hand.bust:
                 # Player win
+                winnings = self.player.hand.bet*2
                 self.game_status = win_game_status
                 self.collectWinnings(player_id=0)
             elif self.player.hand.hand_value == self.people['dealer'].hand.hand_value or \
                         self.player.hand.bust and self.people['dealer'].hand.bust:
                 # Draw
+                winnings += self.player.hand.bet
                 self.game_status = draw_game_status
-                self.addWinnings(player_id=0, draw=True)
+                self.collectWinnings(player_id=0, draw=True)
             else:
                 # Player lose
                 self.game_status = lose_game_status
@@ -466,7 +507,6 @@ class GUIBlackjack(Blackjack):
         """Handle events that have occurred since the last time this function
            was run. Events include mouse clicks on active buttons and quitting 
            the game."""
-        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:  # Window close button pressed
                 self.quit = True

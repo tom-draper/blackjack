@@ -53,8 +53,9 @@ class Deck:
     
     def draw(self):
         idx = np.random.choice(len(self._cards))
+        idx = 15
         card = self._cards[idx]
-        self._cards.remove(card)
+        #self._cards.remove(card)
         return card
 
 
@@ -66,12 +67,8 @@ class Hand:
         self.bust = False
         self.split = False
     
-    def placeBet(self, bet):
-        self.bet = bet
-    
     def addToHandValue(self, card, side=None):
         """Add the value of the input card to the current hand value."""
-        
         # Get current hand value(s) to update
         hand_values = None
         if self.split and side != None:

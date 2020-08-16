@@ -54,6 +54,7 @@ class Blackjack:
             return bust
     
     def split(self):
+        """Splits a players hand."""
         self.player.hand.split = True
         
         # Modify cards to indicate split
@@ -160,7 +161,35 @@ class Blackjack:
     def divider(self):
         print('-'*25 + '\n')
     
-    def collectWinnings(self, player_id=0, draw=False, override_winnings=0):
+    def calcSplitWinnings(self, player_id=0):
+        """Calculate the final winnings if the players hand has been split this 
+           round.
+
+        Args:
+            player_id (int, optional): the ID of the player's winnings to calculate.
+                                       Defaults to 0.
+
+        Returns:
+            int: the total winnings for the player this round.
+        """
+        player = self.people[f'player{player_id}']
+        winnings = 0
+        
+        if player.hand.split:
+            for i in range(2):
+                # Check hand for win
+                if (player.hand.hand_value[i] > self.people['dealer'].hand.hand_value or \
+                            self.people['dealer'].hand.bust) and not player.hand.bust[i]:
+                    # Record win
+                    winnings += self.player.hand.bet*2
+                # Check hand for draw
+                elif player.hand.hand_value[i] == self.people['dealer'].hand.hand_value or \
+                            player.hand.bust and self.people['dealer'].hand.bust:
+                    # Record draw
+                    winnings += player.hand.bet
+        return winnings
+    
+    def collectWinnings(self, player_id=0, draw=False):
         """Collects a players winnings from a round. 
 
         Args:
@@ -171,15 +200,9 @@ class Blackjack:
                                      of a players. If
                                      true, player_id argument irrelevant. Defaults 
                                      to False.
-            override_winnings (int, optional): include value >0 to override the 
-                                               expected amount of winnings (twice
-                                               the placed bet or placed bet for draw).
-                                               Intended to be used when player has
-                                               split and winnings from both card 
-                                               piles must be calculated. Defaults to 0.
         """
-        if override_winnings != 0:
-            winnings = override_winnings
+        if self.people[f'player{player_id}'].hand.split:
+            winnings = self.calcSplitWinnings()
         else:
             placed_bet = self.people[f'player{player_id}'].hand.bet
             
@@ -216,9 +239,8 @@ class Blackjack:
     
     def main(self):
         """Begins the game of command line Blackjack."""
-        quit = False
         game_count = 1
-        while not quit:
+        while not (quit := False):
             print(f'\n-------- Game {game_count} begin --------\n')
             
             # Dealer init
